@@ -1,12 +1,13 @@
 use std::{
     fmt::Display,
     fs::File,
-    io::Write,
     path::{Path, PathBuf},
 };
 
 use anyhow::{anyhow, bail};
 use askama::Template;
+use hex::ToHex;
+use rand::{distributions::Standard, prelude::Distribution, Rng};
 use serde::{Deserialize, Serialize};
 use time::Date;
 
@@ -27,9 +28,26 @@ struct ContactInfo {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct Client {
+    id: Id,
     name: String,
     address: MailingAddress,
     contact: ContactInfo,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+struct Id([u8; 8]);
+
+impl Distribution<Id> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Id {
+        Id(rng.gen())
+    }
+}
+
+impl Display for Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s: String = self.0.encode_hex();
+        f.write_str(&s)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -64,6 +82,7 @@ struct Me {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 struct Project {
+    id: Id,
     name: String,
     description: String,
     client: Client,
@@ -72,6 +91,7 @@ struct Project {
 #[derive(Clone, Debug, Deserialize, Serialize, Template)]
 #[template(path = "invoice.tex", escape = "none")]
 struct Invoice {
+    id: Id,
     me: Me,
     invoice_no: u32,
     project: Project,
@@ -184,4 +204,19 @@ fn compile_latex(
     std::fs::copy(pdf_path, pdf_output_path)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use rand::{thread_rng, Rng};
+
+    use crate::Id;
+
+    #[test]
+    fn test_rand_id() {
+        let mut rng = thread_rng();
+        let id: Id = rng.gen();
+        let id_str = id.to_string();
+        assert_eq!(id_str.len(), 16)
+    }
 }
