@@ -102,13 +102,6 @@ fn get_clients_dir() -> anyhow::Result<PathBuf> {
     Ok(clients_dir)
 }
 
-// fn get_templates_dir() -> anyhow::Result<PathBuf> {
-//     let data_dir = get_data_dir()?;
-//     let templates_dir = data_dir.join("templates");
-//     std::fs::create_dir_all(&templates_dir)?;
-//     Ok(templates_dir)
-// }
-
 /// Reads personal info from yaml in app data dir
 fn read_me() -> anyhow::Result<Me> {
     let data_dir = get_data_dir()?;
@@ -120,21 +113,28 @@ fn read_me() -> anyhow::Result<Me> {
     Ok(me_yaml)
 }
 
+impl Invoice {
+    pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
+        let rendered_tex = Template::render(self)?;
+
+        let invoice_class = Asset {
+            data: include_bytes!("../assets/CSMinimalInvoice.cls").to_vec(),
+            filename: "CSMinimalInvoice.cls".to_owned(),
+        };
+        let assets = &[invoice_class];
+        compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
+
+        Ok(())
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     println!("Hello, world!");
 
     let invoice_file = File::open("invoice.yaml")?;
     let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
 
-    let rendered_tex = Template::render(&invoice)?;
-    let pdf_output_path = "out.pdf";
-
-    let invoice_class = Asset {
-        data: include_bytes!("../assets/CSMinimalInvoice.cls").to_vec(),
-        filename: "CSMinimalInvoice.cls".to_owned(),
-    };
-    let assets = &[invoice_class];
-    compile_latex(&rendered_tex, pdf_output_path, assets)?;
+    invoice.render_pdf("out.pdf")?;
 
     println!("Done!");
 
