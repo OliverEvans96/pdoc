@@ -85,19 +85,42 @@ struct Project {
     id: Id,
     name: String,
     description: String,
-    client: Client,
+    client_ref: Id,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+struct Invoice {
+    id: Id,
+    number: u32,
+    project_ref: Id,
+    days_to_pay: u16,
+    date: Date,
+    items: Vec<LineItem>,
+}
+
+impl Invoice {
+    pub fn collect(self) -> anyhow::Result<FullInvoice> {
+        let me = read_me()?;
+        let project = find_project(self.project_ref)?;
+        let client = find_client(project.client_ref)?;
+
+        let full_invoice = FullInvoice {
+            me,
+            invoice: self,
+            project,
+            client,
+        };
+        Ok(full_invoice)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Template)]
 #[template(path = "invoice.tex", escape = "none")]
-struct Invoice {
-    id: Id,
+struct FullInvoice {
     me: Me,
-    invoice_no: u32,
+    invoice: Invoice,
     project: Project,
-    days_to_pay: u16,
-    invoice_date: Date,
-    items: Vec<LineItem>,
+    client: Client,
 }
 
 fn get_data_dir() -> anyhow::Result<PathBuf> {
@@ -133,7 +156,27 @@ fn read_me() -> anyhow::Result<Me> {
     Ok(me_yaml)
 }
 
-impl Invoice {
+fn find_project(id: Id) -> anyhow::Result<Project> {
+    let dir = get_projects_dir()?;
+    let filename = format!("{}.yaml", id);
+    let path = dir.join(filename);
+    let file = File::open(path)?;
+    let project: Project = serde_yaml::from_reader(file)?;
+
+    Ok(project)
+}
+
+fn find_client(id: Id) -> anyhow::Result<Client> {
+    let dir = get_clients_dir()?;
+    let filename = format!("{}.yaml", id);
+    let path = dir.join(filename);
+    let file = File::open(path)?;
+    let client: Client = serde_yaml::from_reader(file)?;
+
+    Ok(client)
+}
+
+impl FullInvoice {
     pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
         let rendered_tex = Template::render(self)?;
 
@@ -148,13 +191,17 @@ impl Invoice {
     }
 }
 
+// TODO integrate inquire (questions cli)
+// TODO nested create (invoice, project, client)
+
 fn main() -> anyhow::Result<()> {
     println!("Hello, world!");
 
     let invoice_file = File::open("invoice.yaml")?;
     let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
+    let full_invoice = invoice.collect()?;
 
-    invoice.render_pdf("out.pdf")?;
+    full_invoice.render_pdf("out.pdf")?;
 
     println!("Done!");
 
