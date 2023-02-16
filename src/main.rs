@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::invoice::Invoice;
+use crate::{client::Client, contact::ContactInfo, invoice::Invoice};
 
 mod address;
 mod client;
@@ -18,11 +18,15 @@ mod storage;
 fn main() -> anyhow::Result<()> {
     println!("Hello, world!");
 
-    let invoice_file = File::open("invoice.yaml")?;
-    let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
-    let full_invoice = invoice.collect()?;
+    let client = Client::create_from_user_input();
 
-    full_invoice.render_pdf("out.pdf")?;
+    println!("got client: {:#?}", client);
+
+    // let invoice_file = File::open("invoice.yaml")?;
+    // let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
+    // let full_invoice = invoice.collect()?;
+
+    // full_invoice.render_pdf("out.pdf")?;
 
     println!("Done!");
 
