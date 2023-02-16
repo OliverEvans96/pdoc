@@ -11,7 +11,23 @@ use thiserror::Error;
 const ID_LEN: usize = 10;
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(try_from = "String")]
+#[serde(into = "String")]
 pub struct Id([u8; ID_LEN]);
+
+impl TryFrom<String> for Id {
+    type Error = IdDecodeError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Id::from_str(&value)
+    }
+}
+
+impl From<Id> for String {
+    fn from(id: Id) -> Self {
+        id.to_string()
+    }
+}
 
 impl Distribution<Id> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Id {
