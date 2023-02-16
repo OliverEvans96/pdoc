@@ -1,7 +1,9 @@
+use std::fs::File;
+
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
-use crate::{address::MailingAddress, contact::ContactInfo, id::Id};
+use crate::{address::MailingAddress, contact::ContactInfo, id::Id, storage::get_clients_dir};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Client {
@@ -38,5 +40,19 @@ impl Client {
         };
 
         Ok(client)
+    }
+
+    pub fn filename(&self) -> String {
+        self.id.to_filename()
+    }
+
+    pub fn save(&self) -> anyhow::Result<()> {
+        let clients_dir = get_clients_dir()?;
+        let path = clients_dir.join(self.filename());
+        let file = File::create(path)?;
+
+        serde_yaml::to_writer(file, self)?;
+
+        Ok(())
     }
 }
