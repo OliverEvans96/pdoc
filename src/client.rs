@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{collections::HashMap, fs::File, path::Path};
 
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -54,5 +54,30 @@ impl Client {
         serde_yaml::to_writer(file, self)?;
 
         Ok(())
+    }
+
+    pub fn read(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let file = File::open(path.as_ref())?;
+        let client: Client = serde_yaml::from_reader(file)?;
+
+        Ok(client)
+    }
+
+    pub fn list() -> anyhow::Result<HashMap<Id, String>> {
+        let clients_dir = get_clients_dir()?;
+        let mut clients: HashMap<Id, String> = HashMap::new();
+        for entry_res in clients_dir.read_dir()? {
+            let entry = entry_res?;
+
+            // Skip clients with invalid filenames
+            if let Ok(id) = Id::from_filename(entry.file_name()) {
+                // TODO: just log warning, not error if client cannot be read?
+                let client = Client::read(entry.path())?;
+                // TODO: check that filename id matches stored id?
+                clients.insert(client.id, client.name);
+            }
+        }
+
+        Ok(clients)
     }
 }

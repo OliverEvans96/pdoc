@@ -17,8 +17,10 @@ mod storage;
 
 #[derive(Subcommand)]
 enum Command {
-    /// Get or create client
+    /// Get or create client.
     Client,
+    /// List all saved clients.
+    ListClients,
 }
 
 #[derive(Parser)]
@@ -47,6 +49,16 @@ fn generate_invoice() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn list_clients() -> anyhow::Result<()> {
+    let clients = Client::list()?;
+
+    for (id, name) in clients {
+        println!("{}: {}", id, name)
+    }
+
+    Ok(())
+}
+
 // TODO nested create (invoice, project, client)
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -55,6 +67,7 @@ fn main() -> anyhow::Result<()> {
 
     match opts.command {
         Command::Client => get_or_create_client()?,
+        Command::ListClients => list_clients()?,
     }
 
     println!("Done!");

@@ -10,7 +10,7 @@ use thiserror::Error;
 
 const ID_LEN: usize = 10;
 
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(try_from = "String")]
 #[serde(into = "String")]
 pub struct Id([u8; ID_LEN]);
