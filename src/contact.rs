@@ -8,9 +8,17 @@ pub struct ContactInfo {
 
 impl ContactInfo {
     pub fn create_from_user_input() -> anyhow::Result<Self> {
-        let email = inquire::Text::new("Email:").prompt()?;
+        let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let phone = inquire::Text::new("Phone:").prompt()?;
+        let email = inquire::Text::new("Email:")
+            .with_placeholder("test@example.com")
+            .with_validator(required_validator.clone())
+            .prompt()?;
+
+        let phone = inquire::Text::new("Phone:")
+            .with_placeholder("(412) 555-1827")
+            .with_validator(required_validator)
+            .prompt()?;
 
         let contact = Self { email, phone };
 

@@ -17,7 +17,12 @@ impl Client {
 
         let id: Id = rng.gen();
 
-        let name = inquire::Text::new("Client Name:").prompt()?;
+        let required_validator = inquire::validator::ValueRequiredValidator::default();
+
+        let name = inquire::Text::new("Client Name:")
+            .with_placeholder("Acme Co.")
+            .with_validator(required_validator)
+            .prompt()?;
 
         println!("Mailing address:");
         let address = MailingAddress::create_from_user_input()?;
