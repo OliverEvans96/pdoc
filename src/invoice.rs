@@ -19,7 +19,7 @@ use crate::{
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct LineItem {
     pub description: String,
-    pub quantity: u32,
+    pub quantity: f32,
     pub unit_price: PriceUSD,
 }
 
@@ -31,7 +31,7 @@ impl LineItem {
             .filter(|line| !line.is_empty());
 
         if let Some(description) = maybe_description {
-            let quantity = inquire::CustomType::<u32>::new("Quantity:").prompt()?;
+            let quantity = inquire::CustomType::<f32>::new("Quantity:").prompt()?;
             let unit_price = inquire::CustomType::<PriceUSD>::new("Unit Price:").prompt()?;
 
             let line_item = LineItem {
