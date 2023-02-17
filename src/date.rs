@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use time::{format_description::FormatItem, macros::format_description, Date};
 
 /// A utility class for serializing / deserializing dates.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DateString(String);
 
 const SERDE_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day]");
@@ -31,7 +31,7 @@ impl Display for DateString {
             .try_into()
             .expect("DateString should be parseable w/ SERDE_FORMAT");
 
-        let display_format = format_description!("[month repr:long] [day], [year]");
+        let display_format = format_description!("[month repr:long] [day padding:none], [year]");
         let s = date
             .format(&display_format)
             .map_err(|_err| std::fmt::Error)?;

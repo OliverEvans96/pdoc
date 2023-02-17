@@ -4,7 +4,6 @@ use askama::Template;
 use inquire::validator::{StringValidator, Validation};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TryFromInto};
-use time::Date;
 
 use crate::{
     client::Client,
@@ -31,7 +30,7 @@ pub struct Invoice {
     pub project_ref: Id,
     pub days_to_pay: u16,
     #[serde_as(as = "TryFromInto<DateString>")]
-    pub date: Date,
+    pub date: DateString,
     pub items: Vec<LineItem>,
 }
 
@@ -106,7 +105,7 @@ impl Invoice {
 
         let chrono_date = inquire::DateSelect::new("Invoice date:").prompt()?;
         // Convert `chrono::Date` to `time::Date`.
-        let date: Date = DateString::try_new(chrono_date.to_string())?.try_into()?;
+        let date = DateString::try_new(chrono_date.to_string())?;
 
         // TODO create line items
         let invoice = Invoice {
@@ -187,7 +186,7 @@ mod test {
             number: 5,
             project_ref: Id::new("Manhattan".to_owned()),
             days_to_pay: 7,
-            date: date!(2023 - 02 - 17),
+            date: date!(2023 - 02 - 17).try_into()?,
             items: Vec::new(),
         };
 
@@ -217,7 +216,7 @@ items: []
             number: 5,
             project_ref: Id::new("Manhattan".to_owned()),
             days_to_pay: 7,
-            date: date!(2023 - 02 - 17),
+            date: date!(2023 - 02 - 17).try_into()?,
             items: Vec::new(),
         };
 
