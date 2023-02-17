@@ -10,7 +10,7 @@ use crate::{
     client::Client,
     date::DateString,
     id::Id,
-    latex::{compile_latex, Asset},
+    latex::{compile_latex, Asset, Latex},
     me::{Me, PaymentMethod},
     price::PriceUSD,
     project::{Project, ProjectAutocomplete},
@@ -162,7 +162,7 @@ impl Invoice {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Template)]
-#[template(path = "invoice.tex", escape = "none")]
+#[template(path = "invoice.tex")]
 pub struct FullInvoice {
     pub me: Me,
     pub invoice: Invoice,
