@@ -84,6 +84,7 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
 // TODO delineate different input sections with underlined headers
+// TODO edit me.yaml from CLI
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
