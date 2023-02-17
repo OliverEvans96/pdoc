@@ -79,6 +79,8 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO allow non-integer quantities in line items
 // TODO generate receipts for invoices
 // TODO display final yaml and allow user to open in editor
+// TODO save PDFs to data dir?
+// TODO re-render PDFs from yaml?
 // TODO finalize CLI
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
