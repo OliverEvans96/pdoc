@@ -23,6 +23,30 @@ pub struct LineItem {
     pub unit_price: PriceUSD,
 }
 
+impl LineItem {
+    pub fn create_from_user_input() -> anyhow::Result<Option<Self>> {
+        let maybe_description = inquire::Text::new("Line item:")
+            .prompt_skippable()?
+            // Convert Some("") to None
+            .filter(|line| !line.is_empty());
+
+        if let Some(description) = maybe_description {
+            let quantity = inquire::CustomType::<u32>::new("Quantity:").prompt()?;
+            let unit_price = inquire::CustomType::<PriceUSD>::new("Unit Price:").prompt()?;
+
+            let line_item = LineItem {
+                description,
+                quantity,
+                unit_price,
+            };
+
+            Ok(Some(line_item))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Invoice {
     pub number: u32,
@@ -109,13 +133,17 @@ impl Invoice {
         let due_date = invoice_date + Duration::days(days_to_pay.into());
         let due_date_string = DateString::try_from(due_date)?;
 
-        // TODO create line items
+        let mut items = Vec::new();
+        while let Some(item) = LineItem::create_from_user_input()? {
+            items.push(item);
+        }
+
         let invoice = Invoice {
             number: invoice_number,
             project_ref: project_name,
             date: invoice_date_string,
             due_date: due_date_string,
-            items: Vec::new(),
+            items,
         };
 
         Ok(invoice)
