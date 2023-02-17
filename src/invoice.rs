@@ -3,7 +3,7 @@ use std::{fs::File, path::Path};
 use askama::Template;
 use inquire::validator::{StringValidator, Validation};
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, TryFromInto};
+use time::{Date, Duration};
 
 use crate::{
     client::Client,
@@ -23,14 +23,12 @@ pub struct LineItem {
     pub unit_price: PriceUSD,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Invoice {
     pub number: u32,
     pub project_ref: Id,
-    pub days_to_pay: u16,
-    #[serde_as(as = "TryFromInto<DateString>")]
     pub date: DateString,
+    pub due_date: DateString,
     pub items: Vec<LineItem>,
 }
 
@@ -99,20 +97,24 @@ impl Invoice {
 
         let project_name = Project::get_or_create_from_user_input()?;
 
+        let chrono_date = inquire::DateSelect::new("Invoice date:").prompt()?;
+        // Convert `chrono::Date` to `time::Date`.
+        let invoice_date_string = DateString::try_new(chrono_date.to_string())?;
+        let invoice_date: Date = invoice_date_string.clone().try_into()?;
+
         let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
             .with_default(7)
             .prompt()?;
 
-        let chrono_date = inquire::DateSelect::new("Invoice date:").prompt()?;
-        // Convert `chrono::Date` to `time::Date`.
-        let date = DateString::try_new(chrono_date.to_string())?;
+        let due_date = invoice_date + Duration::days(days_to_pay.into());
+        let due_date_string = DateString::try_from(due_date)?;
 
         // TODO create line items
         let invoice = Invoice {
             number: invoice_number,
             project_ref: project_name,
-            days_to_pay,
-            date,
+            date: invoice_date_string,
+            due_date: due_date_string,
             items: Vec::new(),
         };
 

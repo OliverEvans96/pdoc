@@ -83,7 +83,7 @@
 
 % Invoice information section
 \begin{minipage}[t]{0.38\textwidth}
-	\textbf{Due:} \duedatedays{ {{- invoice.days_to_pay -}} } % Use the \duedatedays{<number>} command to automatically determine the date when the invoice is due using the number of days from today in the single parameter to the command, or remove it and enter a due date manually
+	\textbf{Due:} {{ invoice.due_date }} % Use the \duedatedays{<number>} command to automatically determine the date when the invoice is due using the number of days from today in the single parameter to the command, or remove it and enter a due date manually
 	
 	\textbf{Project:} {{ project.name }} % Project name
 	
