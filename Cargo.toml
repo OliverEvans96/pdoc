@@ -16,7 +16,8 @@ directories = "4.0.1"
 inquire = "0.5.3"
 latex = "0.3.1"
 serde = "1.0.152"
+serde_with = "2.2.0"
 serde_yaml = "0.9.17"
 tempfile = "3.3.0"
 thiserror = "1.0.38"
-time = { version = "0.3.17", features = ["serde", "local-offset"] }
+time = { version = "0.3.17", features = ["serde", "macros", "local-offset", "parsing", "formatting"] }

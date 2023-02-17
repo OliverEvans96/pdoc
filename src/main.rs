@@ -2,12 +2,14 @@ use std::fs::File;
 
 use clap::{Parser, Subcommand};
 use project::Project;
+use time::Date;
 
 use crate::{client::Client, invoice::Invoice};
 
 mod address;
 mod client;
 mod contact;
+mod date;
 mod id;
 mod invoice;
 mod latex;
@@ -46,15 +48,13 @@ fn get_or_create_client() -> anyhow::Result<()> {
 
 fn generate_invoice() -> anyhow::Result<()> {
     let invoice = Invoice::create_from_user_input()?;
-    let x = invoice.save()?;
+    invoice.save()?;
 
     println!("Invoice: {:#?}", invoice);
 
-    // let invoice_file = File::open("invoice.yaml")?;
-    // let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
-    // let full_invoice = invoice.collect()?;
+    let full_invoice = invoice.collect()?;
 
-    // full_invoice.render_pdf("out.pdf")?;
+    full_invoice.render_pdf("out.pdf")?;
 
     Ok(())
 }
@@ -81,7 +81,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO nested create (invoice, project, client)
 // TODO unique name/number validators
 // TODO partial completions (until ambiguity)
-// TODO ISO date serialization/deserialization
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 

@@ -3,10 +3,12 @@ use std::{fs::File, path::Path};
 use askama::Template;
 use inquire::validator::{StringValidator, Validation};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, TryFromInto};
 use time::{Date, OffsetDateTime};
 
 use crate::{
     client::Client,
+    date::DateString,
     id::Id,
     latex::{compile_latex, Asset},
     me::{Me, PaymentMethod},
@@ -15,18 +17,20 @@ use crate::{
     storage::{find_client, find_project, get_invoices_dir, read_me},
 };
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct LineItem {
     pub description: String,
     pub quantity: u32,
     pub unit_price: PriceUSD,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde_as]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Invoice {
     pub number: u32,
     pub project_ref: Id,
     pub days_to_pay: u16,
+    #[serde_as(as = "TryFromInto<DateString>")]
     pub date: Date,
     pub items: Vec<LineItem>,
 }
@@ -175,6 +179,62 @@ impl FullInvoice {
         };
         let assets = &[invoice_class];
         compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::id::Id;
+
+    use super::Invoice;
+
+    use time::macros::date;
+
+    #[test]
+    fn test_serialize_invoice() -> anyhow::Result<()> {
+        let invoice = Invoice {
+            number: 5,
+            project_ref: Id::new("Manhattan".to_owned()),
+            days_to_pay: 7,
+            date: date!(2023 - 02 - 17),
+            items: Vec::new(),
+        };
+
+        let expected = r#"number: 5
+project_ref: Manhattan
+days_to_pay: 7
+date: 2023-02-17
+items: []
+"#;
+
+        let actual = serde_yaml::to_string(&invoice)?;
+
+        assert_eq!(actual, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_deserialize_invoice() -> anyhow::Result<()> {
+        let yaml = r#"number: 5
+project_ref: Manhattan
+days_to_pay: 7
+date: 2023-02-17
+items: []
+"#;
+        let expected = Invoice {
+            number: 5,
+            project_ref: Id::new("Manhattan".to_owned()),
+            days_to_pay: 7,
+            date: date!(2023 - 02 - 17),
+            items: Vec::new(),
+        };
+
+        let actual: Invoice = serde_yaml::from_str(yaml)?;
+
+        assert_eq!(actual, expected);
 
         Ok(())
     }
