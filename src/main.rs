@@ -21,6 +21,8 @@ enum Command {
     Client,
     /// List all saved clients.
     ListClients,
+    /// Generate an invoice.
+    Invoice,
 }
 
 #[derive(Parser)]
@@ -68,6 +70,7 @@ fn main() -> anyhow::Result<()> {
     match opts.command {
         Command::Client => get_or_create_client()?,
         Command::ListClients => list_clients()?,
+        Command::Invoice => generate_invoice()?,
     }
 
     println!("Done!");
