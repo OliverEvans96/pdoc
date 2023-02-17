@@ -81,6 +81,8 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO nested create (invoice, project, client)
 // TODO unique name/number validators
 // TODO partial completions (until ambiguity)
+// TODO refactor autocomplete & save into `create_from_user_input`
+// TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
