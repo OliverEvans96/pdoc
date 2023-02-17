@@ -542,25 +542,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "invgen"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "askama",
- "clap",
- "currency_rs",
- "directories",
- "inquire",
- "latex",
- "serde",
- "serde_with",
- "serde_yaml",
- "tempfile",
- "thiserror",
- "time",
-]
-
-[[package]]
 name = "io-lifetimes"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -790,6 +771,25 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-sys",
+]
+
+[[package]]
+name = "pdoc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "askama",
+ "clap",
+ "currency_rs",
+ "directories",
+ "inquire",
+ "latex",
+ "serde",
+ "serde_with",
+ "serde_yaml",
+ "tempfile",
+ "thiserror",
+ "time",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "invgen"
+name = "pdoc"
 version = "0.1.0"
 authors = ["Oliver Evans <oliverevans96@gmail.com>"]
 license = "MIT"
