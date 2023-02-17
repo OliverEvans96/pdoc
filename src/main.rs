@@ -75,9 +75,11 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO unique name/number validators
 // TODO partial completions (until ambiguity)
 // TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
-// TODO days to pay function in latex template always calculates from today (not from invoice date)
-// TODO better date rendering
 // TODO render latex to pdf using tectonic or texrender crates
+// TODO allow non-integer quantities in line items
+// TODO generate receipts for invoices
+// TODO display final yaml and allow user to open in editor
+// TODO finalize CLI
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
