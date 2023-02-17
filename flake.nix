@@ -11,7 +11,7 @@
         rustPlatform = pkgs.rustPlatform;
       in {
         defaultPackage = rustPlatform.buildRustPackage {
-          pname = "invgen";
+          pname = "pdoc";
           version = "0.1.0";
 
           nativeBuildInputs = with pkgs; [ lld pkgconfig openssl udev ];
@@ -22,7 +22,7 @@
         };
 
         devShell = pkgs.mkShell {
-          name = "invgen-shell";
+          name = "pdoc-shell";
           src = ./.;
 
           buildInputs = with pkgs; [
