@@ -187,15 +187,15 @@ mod test {
         let invoice = Invoice {
             number: 5,
             project_ref: Id::new("Manhattan".to_owned()),
-            days_to_pay: 7,
             date: date!(2023 - 02 - 17).try_into()?,
+            due_date: date!(2023 - 02 - 24).try_into()?,
             items: Vec::new(),
         };
 
         let expected = r#"number: 5
 project_ref: Manhattan
-days_to_pay: 7
 date: 2023-02-17
+due_date: 2023-02-24
 items: []
 "#;
 
@@ -210,15 +210,15 @@ items: []
     fn test_deserialize_invoice() -> anyhow::Result<()> {
         let yaml = r#"number: 5
 project_ref: Manhattan
-days_to_pay: 7
 date: 2023-02-17
+due_date: 2023-02-24
 items: []
 "#;
         let expected = Invoice {
             number: 5,
             project_ref: Id::new("Manhattan".to_owned()),
-            days_to_pay: 7,
             date: date!(2023 - 02 - 17).try_into()?,
+            due_date: date!(2023 - 02 - 24).try_into()?,
             items: Vec::new(),
         };
 
