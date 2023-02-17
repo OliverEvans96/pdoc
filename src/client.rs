@@ -84,16 +84,21 @@ pub struct ClientAutocomplete {
 }
 
 impl ClientAutocomplete {
-    pub fn try_new() -> anyhow::Result<Self> {
-        let ids = Client::list()?;
-        let client_names: Vec<String> = ids.into_iter().map(Into::into).collect();
+    pub fn new(client_ids: Vec<Id>) -> Self {
+        let client_names: Vec<String> = client_ids.into_iter().map(Into::into).collect();
+
         let lowercase_names = client_names.iter().map(|s| s.to_lowercase()).collect();
-        let new = Self {
+
+        Self {
             client_names,
             lowercase_names,
-        };
+        }
+    }
 
-        Ok(new)
+    pub fn try_new() -> anyhow::Result<Self> {
+        let client_names = Client::list()?;
+
+        Ok(Self::new(client_names))
     }
 }
 

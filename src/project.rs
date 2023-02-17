@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{client::ClientAutocomplete, id::Id};
+use crate::{
+    client::{Client, ClientAutocomplete},
+    id::Id,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Project {
@@ -19,14 +22,20 @@ impl Project {
         //     .prompt()?
         //     .into();
 
-        let autocomplete = ClientAutocomplete::try_new()?;
+        let client_names = Client::list()?;
+        let autocomplete = ClientAutocomplete::new(client_names.clone());
 
-        let client = inquire::Text::new("Client Name:")
+        let client_name: Id = inquire::Text::new("Client Name:")
             .with_autocomplete(autocomplete)
             .with_validator(required_validator)
-            .prompt()?;
+            .prompt()?
+            .into();
 
-        println!("Client: {}", client);
+        if client_names.contains(&client_name) {
+            println!("Existing client: {}", client_name);
+        } else {
+            println!("New client: {}", client_name);
+        }
 
         Ok(())
     }
