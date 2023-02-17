@@ -106,7 +106,7 @@ impl Invoice {
 
         let chrono_date = inquire::DateSelect::new("Invoice date:").prompt()?;
         // Convert `chrono::Date` to `time::Date`.
-        let date: Date = DateString::new(chrono_date.to_string()).try_into()?;
+        let date: Date = DateString::try_new(chrono_date.to_string())?.try_into()?;
 
         // TODO create line items
         let invoice = Invoice {
