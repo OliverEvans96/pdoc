@@ -1,5 +1,6 @@
 use std::{fs::File, path::Path};
 
+use inquire::autocompletion::Replacement;
 use serde::{Deserialize, Serialize};
 
 use crate::{address::MailingAddress, contact::ContactInfo, id::Id, storage::get_clients_dir};
@@ -73,5 +74,36 @@ impl Client {
             .collect();
 
         Ok(client_names)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ClientAutocomplete {
+    clients: Vec<String>,
+}
+
+impl ClientAutocomplete {
+    pub fn try_new() -> anyhow::Result<Self> {
+        let ids = Client::list()?;
+        let names = ids.into_iter().map(Into::into).collect();
+        let new = Self { clients: names };
+
+        Ok(new)
+    }
+}
+
+impl inquire::Autocomplete for ClientAutocomplete {
+    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
+        // TODO: filter results
+        Ok(self.clients.clone())
+    }
+
+    fn get_completion(
+        &mut self,
+        input: &str,
+        highlighted_suggestion: Option<String>,
+    ) -> Result<Replacement, inquire::CustomUserError> {
+        // TODO: use input
+        Ok(highlighted_suggestion)
     }
 }

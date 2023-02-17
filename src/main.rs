@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use clap::{Parser, Subcommand};
+use project::Project;
 
 use crate::{client::Client, invoice::Invoice};
 
@@ -23,6 +24,8 @@ enum Command {
     ListClients,
     /// Generate an invoice.
     Invoice,
+    /// Get or create project.
+    Project,
 }
 
 #[derive(Parser)]
@@ -61,6 +64,12 @@ fn list_clients() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn get_or_create_project() -> anyhow::Result<()> {
+    Project::create_from_user_input()?;
+
+    Ok(())
+}
+
 // TODO nested create (invoice, project, client)
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -71,6 +80,7 @@ fn main() -> anyhow::Result<()> {
         Command::Client => get_or_create_client()?,
         Command::ListClients => list_clients()?,
         Command::Invoice => generate_invoice()?,
+        Command::Project => get_or_create_project()?,
     }
 
     println!("Done!");

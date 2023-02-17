@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::id::Id;
+use crate::{client::ClientAutocomplete, id::Id};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Project {
@@ -10,15 +10,24 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn create_from_user_input() -> anyhow::Result<Self> {
+    pub fn create_from_user_input() -> anyhow::Result<()> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let name: Id = inquire::Text::new("Project Name:")
-            .with_placeholder("Save the Earth")
-            .with_validator(required_validator)
-            .prompt()?
-            .into();
+        // let name: Id = inquire::Text::new("Project Name:")
+        //     .with_placeholder("Save the Earth")
+        //     .with_validator(required_validator.clone())
+        //     .prompt()?
+        //     .into();
 
-        todo!()
+        let autocomplete = ClientAutocomplete::try_new()?;
+
+        let client = inquire::Text::new("Client Name:")
+            .with_autocomplete(autocomplete)
+            .with_validator(required_validator)
+            .prompt()?;
+
+        println!("Client: {}", client);
+
+        Ok(())
     }
 }
