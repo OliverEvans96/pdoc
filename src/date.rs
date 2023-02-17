@@ -5,6 +5,12 @@ use time::{macros::format_description, Date};
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DateString(String);
 
+impl DateString {
+    pub fn new(s: String) -> Self {
+        Self(s)
+    }
+}
+
 impl From<Date> for DateString {
     fn from(date: Date) -> Self {
         Self(date.to_string())

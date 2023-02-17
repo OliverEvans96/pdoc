@@ -112,19 +112,20 @@ impl Invoice {
             project.save()?;
         };
 
-        // let days_to_pay = inquire::Text::new("Invoice number:")
-        //     .with_initial_value("7")
-        //     .with_validator(required_validator)
-        //     .with_validator(number_validator)
-        //     .prompt()?
-        //     .into();
+        let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
+            .with_default(7)
+            .prompt()?;
 
-        // TODO
+        let chrono_date = inquire::DateSelect::new("Invoice date:").prompt()?;
+        // Convert `chrono::Date` to `time::Date`.
+        let date: Date = DateString::new(chrono_date.to_string()).try_into()?;
+
+        // TODO create line items
         let invoice = Invoice {
             number: invoice_number,
             project_ref: project_name,
-            days_to_pay: 7,
-            date: OffsetDateTime::now_local()?.date(),
+            days_to_pay,
+            date,
             items: Vec::new(),
         };
 

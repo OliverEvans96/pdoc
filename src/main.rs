@@ -83,6 +83,7 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO partial completions (until ambiguity)
 // TODO refactor autocomplete & save into `create_from_user_input`
 // TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
+// TODO days to pay function in latex template always calculates from today (not from invoice date)
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
