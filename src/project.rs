@@ -1,9 +1,13 @@
 use std::fs::File;
 
-use inquire::autocompletion::Replacement;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::Client, id::Id, storage::get_projects_dir};
+use crate::{
+    client::Client,
+    completion::{LocalAutocompleter, PrefixAutocomplete},
+    id::Id,
+    storage::get_projects_dir,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Project {
@@ -17,7 +21,7 @@ impl Project {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
         let project_names = Project::list()?;
-        let autocomplete = ProjectAutocomplete::new(project_names.clone());
+        let autocomplete = LocalAutocompleter::new(ProjectAutocomplete::new(project_names.clone()));
 
         let project_name: Id = inquire::Text::new("Project Name:")
             .with_autocomplete(autocomplete)
@@ -102,55 +106,14 @@ impl ProjectAutocomplete {
             lowercase_names,
         }
     }
-
-    pub fn try_new() -> anyhow::Result<Self> {
-        let project_names = Project::list()?;
-
-        Ok(Self::new(project_names))
-    }
-
-    fn get_matches(&self, input: &str) -> anyhow::Result<Vec<String>> {
-        let lowercase_input = input.to_lowercase();
-
-        let matches = self
-            .lowercase_names
-            .iter()
-            .enumerate()
-            // Filter to matching names
-            .filter(|(_i, name)| name.starts_with(&lowercase_input))
-            // Get normal-case name with same index
-            .map(|(i, _name)| self.project_names[i].clone())
-            .collect();
-
-        Ok(matches)
-    }
 }
 
-impl inquire::Autocomplete for ProjectAutocomplete {
-    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
-        let matches = self.get_matches(input)?;
-        Ok(matches)
+impl PrefixAutocomplete for ProjectAutocomplete {
+    fn get_options(&self) -> &[String] {
+        &self.project_names
     }
 
-    fn get_completion(
-        &mut self,
-        input: &str,
-        highlighted_suggestion: Option<String>,
-    ) -> Result<Replacement, inquire::CustomUserError> {
-        if let Some(suggestion) = highlighted_suggestion {
-            return Ok(Replacement::Some(suggestion));
-        } else {
-            let matches = self.get_matches(input)?;
-            // Is there at least one match?
-            if let Some((first, rest)) = matches.split_first() {
-                // Is there exactly one match?
-                if rest.len() == 0 {
-                    return Ok(Replacement::Some(first.clone()));
-                }
-            }
-        }
-
-        // Fallback to no completion
-        Ok(Replacement::None)
+    fn get_lowercase_options(&self) -> &[String] {
+        &self.lowercase_names
     }
 }
