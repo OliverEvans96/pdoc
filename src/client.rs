@@ -22,6 +22,12 @@ impl Client {
             .prompt()?
             .into();
 
+        let client = Client::create_from_user_input_with_name(name)?;
+
+        Ok(client)
+    }
+
+    pub fn create_from_user_input_with_name(name: Id) -> anyhow::Result<Self> {
         println!("Mailing address:");
         let address = MailingAddress::create_from_user_input()?;
 
@@ -109,9 +115,7 @@ impl ClientAutocomplete {
 
         Ok(Self::new(client_names))
     }
-}
 
-impl ClientAutocomplete {
     fn get_matches(&self, input: &str) -> anyhow::Result<Vec<String>> {
         let lowercase_input = input.to_lowercase();
 

@@ -45,11 +45,16 @@ fn get_or_create_client() -> anyhow::Result<()> {
 }
 
 fn generate_invoice() -> anyhow::Result<()> {
-    let invoice_file = File::open("invoice.yaml")?;
-    let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
-    let full_invoice = invoice.collect()?;
+    let invoice = Invoice::create_from_user_input()?;
+    let x = invoice.save()?;
 
-    full_invoice.render_pdf("out.pdf")?;
+    println!("Invoice: {:#?}", invoice);
+
+    // let invoice_file = File::open("invoice.yaml")?;
+    // let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
+    // let full_invoice = invoice.collect()?;
+
+    // full_invoice.render_pdf("out.pdf")?;
 
     Ok(())
 }
@@ -65,12 +70,18 @@ fn list_clients() -> anyhow::Result<()> {
 }
 
 fn get_or_create_project() -> anyhow::Result<()> {
-    Project::create_from_user_input()?;
+    let project = Project::create_from_user_input()?;
+    project.save()?;
+
+    println!("project: {:#?}", project);
 
     Ok(())
 }
 
 // TODO nested create (invoice, project, client)
+// TODO unique name/number validators
+// TODO partial completions (until ambiguity)
+// TODO ISO date serialization/deserialization
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
