@@ -32,7 +32,8 @@ impl Project {
             .into();
 
         if client_names.contains(&client_name) {
-            println!("Existing client: {}", client_name);
+            let client = Client::load(client_name)?;
+            println!("Existing client: {:#?}", client);
         } else {
             println!("New client: {}", client_name);
         }

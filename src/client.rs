@@ -51,9 +51,18 @@ impl Client {
         Ok(())
     }
 
-    pub fn read(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let file = File::open(path.as_ref())?;
         let client: Client = serde_yaml::from_reader(file)?;
+
+        Ok(client)
+    }
+
+    pub fn load(name: Id) -> anyhow::Result<Self> {
+        let clients_dir = get_clients_dir()?;
+        let filename = name.to_filename();
+        let path = clients_dir.join(filename);
+        let client = Client::load_from_path(path)?;
 
         Ok(client)
     }
