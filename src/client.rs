@@ -3,7 +3,10 @@ use std::{fs::File, path::Path};
 use inquire::autocompletion::Replacement;
 use serde::{Deserialize, Serialize};
 
-use crate::{address::MailingAddress, contact::ContactInfo, id::Id, storage::get_clients_dir};
+use crate::{
+    address::MailingAddress, completion::get_common_prefix, contact::ContactInfo, id::Id,
+    storage::get_clients_dir,
+};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Client {
@@ -151,19 +154,11 @@ impl inquire::Autocomplete for ClientAutocomplete {
         highlighted_suggestion: Option<String>,
     ) -> Result<Replacement, inquire::CustomUserError> {
         if let Some(suggestion) = highlighted_suggestion {
-            return Ok(Replacement::Some(suggestion));
+            Ok(Replacement::Some(suggestion))
         } else {
             let matches = self.get_matches(input)?;
-            // Is there at least one match?
-            if let Some((first, rest)) = matches.split_first() {
-                // Is there exactly one match?
-                if rest.len() == 0 {
-                    return Ok(Replacement::Some(first.clone()));
-                }
-            }
+            let prefix = get_common_prefix(matches);
+            Ok(Replacement::Some(prefix))
         }
-
-        // Fallback to no completion
-        Ok(Replacement::None)
     }
 }

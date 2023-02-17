@@ -5,6 +5,7 @@ use crate::{client::Client, invoice::Invoice};
 
 mod address;
 mod client;
+mod completion;
 mod contact;
 mod date;
 mod id;
