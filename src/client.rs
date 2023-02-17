@@ -13,18 +13,24 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn create_from_user_input() -> anyhow::Result<Self> {
+    pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
+        let client_names = Client::list()?;
+        let autocomplete = ClientAutocomplete::new(client_names.clone());
+
         let name: Id = inquire::Text::new("Client Name:")
-            .with_placeholder("Acme Co.")
+            .with_autocomplete(autocomplete)
             .with_validator(required_validator)
             .prompt()?
             .into();
 
-        let client = Client::create_from_user_input_with_name(name)?;
+        if !client_names.contains(&name) {
+            let client = Client::create_from_user_input_with_name(name.clone())?;
+            client.save()?;
+        };
 
-        Ok(client)
+        Ok(name)
     }
 
     pub fn create_from_user_input_with_name(name: Id) -> anyhow::Result<Self> {

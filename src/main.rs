@@ -1,8 +1,5 @@
-use std::fs::File;
-
 use clap::{Parser, Subcommand};
 use project::Project;
-use time::Date;
 
 use crate::{client::Client, invoice::Invoice};
 
@@ -37,11 +34,9 @@ struct Opts {
 }
 
 fn get_or_create_client() -> anyhow::Result<()> {
-    let client = Client::create_from_user_input()?;
+    let client = Client::get_or_create_from_user_input()?;
 
     println!("got client: {:#?}", client);
-
-    client.save()?;
 
     Ok(())
 }
@@ -70,8 +65,7 @@ fn list_clients() -> anyhow::Result<()> {
 }
 
 fn get_or_create_project() -> anyhow::Result<()> {
-    let project = Project::create_from_user_input()?;
-    project.save()?;
+    let project = Project::get_or_create_from_user_input()?;
 
     println!("project: {:#?}", project);
 
@@ -81,7 +75,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO nested create (invoice, project, client)
 // TODO unique name/number validators
 // TODO partial completions (until ambiguity)
-// TODO refactor autocomplete & save into `create_from_user_input`
 // TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
 // TODO days to pay function in latex template always calculates from today (not from invoice date)
 // TODO render latex to pdf using tectonic or texrender crates

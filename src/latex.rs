@@ -20,7 +20,7 @@ where
             )
         })?;
 
-        let x = fmt::Write::write_str(&mut self.0, s).map_err(|err| {
+        fmt::Write::write_str(&mut self.0, s).map_err(|err| {
             io::Error::new(io::ErrorKind::Other, format!("Error writing: {}", err))
         })?;
 

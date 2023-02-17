@@ -4,7 +4,7 @@ use askama::Template;
 use inquire::validator::{StringValidator, Validation};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TryFromInto};
-use time::{Date, OffsetDateTime};
+use time::Date;
 
 use crate::{
     client::Client,
@@ -13,7 +13,7 @@ use crate::{
     latex::{compile_latex, Asset, Latex},
     me::{Me, PaymentMethod},
     price::PriceUSD,
-    project::{Project, ProjectAutocomplete},
+    project::Project,
     storage::{find_client, find_project, get_invoices_dir, read_me},
 };
 
@@ -98,19 +98,7 @@ impl Invoice {
             .prompt()?
             .parse()?;
 
-        let project_names = Project::list()?;
-        let autocomplete = ProjectAutocomplete::new(project_names.clone());
-
-        let project_name: Id = inquire::Text::new("Project Name:")
-            .with_autocomplete(autocomplete)
-            .with_validator(required_validator)
-            .prompt()?
-            .into();
-
-        if !project_names.contains(&project_name) {
-            let project = Project::create_from_user_input_with_name(project_name.clone())?;
-            project.save()?;
-        };
+        let project_name = Project::get_or_create_from_user_input()?;
 
         let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
             .with_default(7)
