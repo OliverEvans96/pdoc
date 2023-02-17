@@ -1,30 +1,25 @@
-use std::{collections::HashMap, fs::File, path::Path};
+use std::{fs::File, path::Path};
 
-use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::{address::MailingAddress, contact::ContactInfo, id::Id, storage::get_clients_dir};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Client {
-    pub id: Id,
-    pub name: String,
+    pub name: Id,
     pub address: MailingAddress,
     pub contact: ContactInfo,
 }
 
 impl Client {
     pub fn create_from_user_input() -> anyhow::Result<Self> {
-        let mut rng = thread_rng();
-
-        let id: Id = rng.gen();
-
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let name = inquire::Text::new("Client Name:")
+        let name: Id = inquire::Text::new("Client Name:")
             .with_placeholder("Acme Co.")
             .with_validator(required_validator)
-            .prompt()?;
+            .prompt()?
+            .into();
 
         println!("Mailing address:");
         let address = MailingAddress::create_from_user_input()?;
@@ -33,7 +28,6 @@ impl Client {
         let contact = ContactInfo::create_from_user_input()?;
 
         let client = Self {
-            id,
             name,
             address,
             contact,
@@ -43,7 +37,7 @@ impl Client {
     }
 
     pub fn filename(&self) -> String {
-        self.id.to_filename()
+        self.name.to_filename()
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
@@ -63,21 +57,21 @@ impl Client {
         Ok(client)
     }
 
-    pub fn list() -> anyhow::Result<HashMap<Id, String>> {
+    pub fn list() -> anyhow::Result<Vec<Id>> {
         let clients_dir = get_clients_dir()?;
-        let mut clients: HashMap<Id, String> = HashMap::new();
-        for entry_res in clients_dir.read_dir()? {
-            let entry = entry_res?;
 
-            // Skip clients with invalid filenames
-            if let Ok(id) = Id::from_filename(entry.file_name()) {
-                // TODO: just log warning, not error if client cannot be read?
-                let client = Client::read(entry.path())?;
-                // TODO: check that filename id matches stored id?
-                clients.insert(client.id, client.name);
-            }
-        }
+        let client_names = clients_dir
+            .read_dir()?
+            .map(|entry_res| -> anyhow::Result<Id> {
+                let entry = entry_res?;
+                let filename = entry.file_name();
+                let name = Id::from_filename(filename)?;
+                Ok(name)
+            })
+            // Ignore any filenames that could not be parsed
+            .filter_map(|res| res.ok())
+            .collect();
 
-        Ok(clients)
+        Ok(client_names)
     }
 }

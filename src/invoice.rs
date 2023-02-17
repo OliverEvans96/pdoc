@@ -23,7 +23,6 @@ pub struct LineItem {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Invoice {
-    pub id: Id,
     pub number: u32,
     pub project_ref: Id,
     pub days_to_pay: u16,
@@ -34,8 +33,8 @@ pub struct Invoice {
 impl Invoice {
     pub fn collect(self) -> anyhow::Result<FullInvoice> {
         let me = read_me()?;
-        let project = find_project(self.project_ref)?;
-        let client = find_client(project.client_ref)?;
+        let project = find_project(&self.project_ref)?;
+        let client = find_client(&project.client_ref)?;
 
         let full_invoice = FullInvoice {
             me,

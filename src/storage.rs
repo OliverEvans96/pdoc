@@ -37,7 +37,7 @@ pub fn read_me() -> anyhow::Result<Me> {
     Ok(me_yaml)
 }
 
-pub fn find_project(id: Id) -> anyhow::Result<Project> {
+pub fn find_project(id: &Id) -> anyhow::Result<Project> {
     let dir = get_projects_dir()?;
     let filename = format!("{}.yaml", id);
     let path = dir.join(filename);
@@ -47,7 +47,7 @@ pub fn find_project(id: Id) -> anyhow::Result<Project> {
     Ok(project)
 }
 
-pub fn find_client(id: Id) -> anyhow::Result<Client> {
+pub fn find_client(id: &Id) -> anyhow::Result<Client> {
     let dir = get_clients_dir()?;
     let filename = format!("{}.yaml", id);
     let path = dir.join(filename);

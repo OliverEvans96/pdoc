@@ -2,7 +2,7 @@ use std::fs::File;
 
 use clap::{Parser, Subcommand};
 
-use crate::{client::Client, contact::ContactInfo, invoice::Invoice};
+use crate::{client::Client, invoice::Invoice};
 
 mod address;
 mod client;
@@ -42,20 +42,20 @@ fn get_or_create_client() -> anyhow::Result<()> {
 }
 
 fn generate_invoice() -> anyhow::Result<()> {
-    // let invoice_file = File::open("invoice.yaml")?;
-    // let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
-    // let full_invoice = invoice.collect()?;
+    let invoice_file = File::open("invoice.yaml")?;
+    let invoice: Invoice = serde_yaml::from_reader(invoice_file)?;
+    let full_invoice = invoice.collect()?;
 
-    // full_invoice.render_pdf("out.pdf")?;
+    full_invoice.render_pdf("out.pdf")?;
 
     Ok(())
 }
 
 fn list_clients() -> anyhow::Result<()> {
-    let clients = Client::list()?;
+    let client_names = Client::list()?;
 
-    for (id, name) in clients {
-        println!("{}: {}", id, name)
+    for name in client_names {
+        println!("- {}", name)
     }
 
     Ok(())
