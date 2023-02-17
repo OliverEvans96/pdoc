@@ -79,23 +79,46 @@ impl Client {
 
 #[derive(Clone, Debug)]
 pub struct ClientAutocomplete {
-    clients: Vec<String>,
+    client_names: Vec<String>,
+    lowercase_names: Vec<String>,
 }
 
 impl ClientAutocomplete {
     pub fn try_new() -> anyhow::Result<Self> {
         let ids = Client::list()?;
-        let names = ids.into_iter().map(Into::into).collect();
-        let new = Self { clients: names };
+        let client_names: Vec<String> = ids.into_iter().map(Into::into).collect();
+        let lowercase_names = client_names.iter().map(|s| s.to_lowercase()).collect();
+        let new = Self {
+            client_names,
+            lowercase_names,
+        };
 
         Ok(new)
     }
 }
 
+impl ClientAutocomplete {
+    fn get_matches(&self, input: &str) -> anyhow::Result<Vec<String>> {
+        let lowercase_input = input.to_lowercase();
+
+        let matches = self
+            .lowercase_names
+            .iter()
+            .enumerate()
+            // Filter to matching names
+            .filter(|(_i, name)| name.starts_with(&lowercase_input))
+            // Get normal-case name with same index
+            .map(|(i, _name)| self.client_names[i].clone())
+            .collect();
+
+        Ok(matches)
+    }
+}
+
 impl inquire::Autocomplete for ClientAutocomplete {
     fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
-        // TODO: filter results
-        Ok(self.clients.clone())
+        let matches = self.get_matches(input)?;
+        Ok(matches)
     }
 
     fn get_completion(
@@ -103,7 +126,20 @@ impl inquire::Autocomplete for ClientAutocomplete {
         input: &str,
         highlighted_suggestion: Option<String>,
     ) -> Result<Replacement, inquire::CustomUserError> {
-        // TODO: use input
-        Ok(highlighted_suggestion)
+        if let Some(suggestion) = highlighted_suggestion {
+            return Ok(Replacement::Some(suggestion));
+        } else {
+            let matches = self.get_matches(input)?;
+            // Is there at least one match?
+            if let Some((first, rest)) = matches.split_first() {
+                // Is there exactly one match?
+                if rest.len() == 0 {
+                    return Ok(Replacement::Some(first.clone()));
+                }
+            }
+        }
+
+        // Fallback to no completion
+        Ok(Replacement::None)
     }
 }
