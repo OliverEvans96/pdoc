@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use time::{Date, Duration};
 
 use crate::{
+    cli::print_header,
     client::Client,
     date::DateString,
     id::Id,
@@ -118,6 +119,10 @@ impl Invoice {
             .with_validator(number_validator)
             .prompt()?
             .parse()?;
+
+        // TODO: Edit invoice if number already exists
+
+        print_header(&format!("Create invoice {}", invoice_number));
 
         let project_name = Project::get_or_create_from_user_input()?;
 

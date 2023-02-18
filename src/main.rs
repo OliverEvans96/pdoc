@@ -1,9 +1,11 @@
 use clap::{Parser, Subcommand};
+use cli::print_title;
 use project::Project;
 
 use crate::{client::Client, invoice::Invoice};
 
 mod address;
+mod cli;
 mod client;
 mod completion;
 mod contact;
@@ -85,10 +87,12 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO finalize CLI
 // TODO delineate different input sections with underlined headers
 // TODO edit me.yaml from CLI
+// TODO pdoc TOML config file (e.g. to set data dir)
+// TODO generate beancount files?
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
-    println!("Hello!");
+    print_title("pdoc");
 
     match opts.command {
         Command::Client => get_or_create_client()?,
@@ -96,8 +100,6 @@ fn main() -> anyhow::Result<()> {
         Command::Invoice => generate_invoice()?,
         Command::Project => get_or_create_project()?,
     }
-
-    println!("Done!");
 
     Ok(())
 }
