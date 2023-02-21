@@ -11,6 +11,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Project {
     pub name: Id,
     pub description: String,

@@ -12,6 +12,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Client {
     pub name: Id,
     pub address: MailingAddress,

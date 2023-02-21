@@ -18,6 +18,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct LineItem {
     pub description: String,
     pub quantity: f32,
@@ -49,6 +50,7 @@ impl LineItem {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Invoice {
     pub number: u32,
     pub project_ref: Id,
@@ -199,6 +201,7 @@ impl Invoice {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Template)]
+#[serde(deny_unknown_fields)]
 #[template(path = "invoice.tex")]
 pub struct FullInvoice {
     pub me: Me,

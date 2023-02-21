@@ -46,6 +46,7 @@ impl<T> Display for SelectOption<T> {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Receipt {
     pub invoice_num: u32,
     pub date: DateString,
@@ -187,6 +188,7 @@ impl Receipt {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Template)]
+#[serde(deny_unknown_fields)]
 #[template(path = "receipt.tex")]
 pub struct FullReceipt {
     pub me: Me,
