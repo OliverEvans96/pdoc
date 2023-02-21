@@ -4,7 +4,7 @@ use anyhow::anyhow;
 
 use crate::{client::Client, id::Id, invoice::Invoice, me::Me, project::Project};
 
-fn get_data_dir() -> anyhow::Result<PathBuf> {
+pub fn get_data_dir() -> anyhow::Result<PathBuf> {
     let project_dirs = directories::ProjectDirs::from("", "", "pdoc")
         .ok_or(anyhow!("Couldn't get data directory"))?;
     let data_dir = project_dirs.data_dir();

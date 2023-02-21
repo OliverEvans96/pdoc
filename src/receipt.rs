@@ -21,6 +21,8 @@ use crate::{
     storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir, read_me},
 };
 
+// TODO should be user-specified in me.yaml
+// (also, this name conflicts with me::PaymentMethod)
 #[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, PartialEq, Serialize)]
 pub enum PaymentMethod {
     PersonalCheck,
