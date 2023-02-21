@@ -1,4 +1,9 @@
-use std::{collections::HashSet, fmt::Display, fs::File, path::Path};
+use std::{
+    collections::HashSet,
+    fmt::Display,
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use anyhow::bail;
 use askama::Template;
@@ -13,7 +18,7 @@ use crate::{
     latex::{compile_latex, Asset, Latex},
     me::Me,
     project::Project,
-    storage::{find_client, find_invoice, find_project, get_receipts_dir, read_me},
+    storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir, read_me},
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, PartialEq, Serialize)]
@@ -204,6 +209,12 @@ pub struct FullReceipt {
 }
 
 impl FullReceipt {
+    pub fn filename(&self) -> String {
+        let name_no_whitespace = self.me.name.split_whitespace().collect::<Vec<_>>().join("");
+
+        format!("Receipt_{}_{}.pdf", name_no_whitespace, self.invoice.number)
+    }
+
     pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
         let rendered_tex = Template::render(self)?;
 
@@ -215,5 +226,14 @@ impl FullReceipt {
         compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
 
         Ok(())
+    }
+
+    pub fn save_pdf(&self) -> anyhow::Result<PathBuf> {
+        let pdfs_dir = get_pdfs_dir()?;
+        let path = pdfs_dir.join(self.filename());
+
+        self.render_pdf(&path)?;
+
+        Ok(path)
     }
 }

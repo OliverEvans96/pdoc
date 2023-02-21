@@ -51,11 +51,10 @@ fn generate_invoice() -> anyhow::Result<()> {
     let invoice = Invoice::create_from_user_input()?;
     invoice.save()?;
 
-    println!("Invoice: {:#?}", invoice);
-
     let full_invoice = invoice.collect()?;
 
-    full_invoice.render_pdf("out.pdf")?;
+    let path = full_invoice.save_pdf()?;
+    println!("\nInvoice PDF saved to {:?}", path);
 
     Ok(())
 }
@@ -64,11 +63,10 @@ fn generate_receipt() -> anyhow::Result<()> {
     let receipt = Receipt::create_from_user_input()?;
     receipt.save()?;
 
-    println!("Receipt: {:#?}", receipt);
-
     let full_receipt = receipt.collect()?;
 
-    full_receipt.render_pdf("out.pdf")?;
+    let path = full_receipt.save_pdf()?;
+    println!("\nReceipt PDF saved to {:?}", path);
 
     Ok(())
 }

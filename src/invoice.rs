@@ -1,4 +1,7 @@
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use askama::Template;
 use serde::{Deserialize, Serialize};
@@ -14,7 +17,7 @@ use crate::{
     me::{Me, PaymentMethod},
     price::PriceUSD,
     project::Project,
-    storage::{find_client, find_project, get_invoices_dir, read_me},
+    storage::{find_client, find_project, get_invoices_dir, get_pdfs_dir, read_me},
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -211,7 +214,13 @@ pub struct FullInvoice {
 }
 
 impl FullInvoice {
-    pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub fn filename(&self) -> String {
+        let name_no_whitespace = self.me.name.split_whitespace().collect::<Vec<_>>().join("");
+
+        format!("Invoice_{}_{}.pdf", name_no_whitespace, self.invoice.number)
+    }
+
+    fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
         let rendered_tex = Template::render(self)?;
 
         let invoice_class = Asset {
@@ -222,6 +231,15 @@ impl FullInvoice {
         compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
 
         Ok(())
+    }
+
+    pub fn save_pdf(&self) -> anyhow::Result<PathBuf> {
+        let pdfs_dir = get_pdfs_dir()?;
+        let path = pdfs_dir.join(self.filename());
+
+        self.render_pdf(&path)?;
+
+        Ok(path)
     }
 }
 

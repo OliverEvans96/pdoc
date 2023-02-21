@@ -40,6 +40,13 @@ pub fn get_receipts_dir() -> anyhow::Result<PathBuf> {
     Ok(receipts_dir)
 }
 
+pub fn get_pdfs_dir() -> anyhow::Result<PathBuf> {
+    let data_dir = get_data_dir()?;
+    let pdfs_dir = data_dir.join("pdfs");
+    std::fs::create_dir_all(&pdfs_dir)?;
+    Ok(pdfs_dir)
+}
+
 /// Reads personal info from yaml in app data dir
 pub fn read_me() -> anyhow::Result<Me> {
     let data_dir = get_data_dir()?;
