@@ -1,5 +1,6 @@
 use std::{collections::HashSet, fmt::Display, fs::File, path::Path};
 
+use anyhow::bail;
 use askama::Template;
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
@@ -97,6 +98,10 @@ impl Receipt {
         let receipt_nums = Receipt::list()?.into_iter().collect::<HashSet<_>>();
 
         let unpaid_invoice_nums = &invoice_nums - &receipt_nums;
+
+        if unpaid_invoice_nums.len() == 0 {
+            bail!("All invoices have been paid!");
+        }
 
         let mut invoice_options: Vec<SelectOption<u32>> = unpaid_invoice_nums
             .into_iter()
