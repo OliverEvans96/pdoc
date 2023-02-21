@@ -96,7 +96,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO render latex to pdf using tectonic or texrender crates
 // TODO quiet latex rendering by default
 // TODO generate receipts for invoices
-// TODO display final yaml and allow user to open in editor
 // TODO specify PDF output location from command line?
 // TODO save PDFs to data dir?
 // TODO re-render PDFs from yaml?

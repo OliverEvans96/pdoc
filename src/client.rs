@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     address::MailingAddress,
+    cli::{print_header, YamlValidator},
     completion::{LocalAutocompleter, PrefixAutocomplete},
     contact::ContactInfo,
     id::Id,
@@ -18,6 +19,26 @@ pub struct Client {
 }
 
 impl Client {
+    pub fn edit_yaml(&self) -> anyhow::Result<Self> {
+        let yaml = serde_yaml::to_string(&self)?;
+
+        // TODO: Show as markdown code block via termimad
+        print_header("Final YAML");
+        println!("{}", yaml);
+
+        let yaml_validator = YamlValidator::<Client>::new();
+
+        let edited = inquire::Editor::new("Edit...")
+            .with_predefined_text(&yaml)
+            .with_validator(yaml_validator)
+            .with_file_extension(".yaml")
+            .prompt()?;
+
+        let parsed = serde_yaml::from_str(&edited)?;
+
+        Ok(parsed)
+    }
+
     pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
@@ -45,11 +66,13 @@ impl Client {
         println!("Contact info:");
         let contact = ContactInfo::create_from_user_input()?;
 
-        let client = Self {
+        let mut client = Self {
             name,
             address,
             contact,
         };
+
+        client = client.edit_yaml()?;
 
         Ok(client)
     }

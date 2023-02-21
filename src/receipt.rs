@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
 use crate::{
-    cli::print_header,
+    cli::{print_header, YamlValidator},
     client::Client,
     date::DateString,
     invoice::Invoice,
@@ -71,6 +71,26 @@ impl Receipt {
         Ok(receipt_numbers)
     }
 
+    pub fn edit_yaml(&self) -> anyhow::Result<Self> {
+        let yaml = serde_yaml::to_string(&self)?;
+
+        // TODO: Show as markdown code block via termimad
+        print_header("Final YAML");
+        println!("{}", yaml);
+
+        let yaml_validator = YamlValidator::<Receipt>::new();
+
+        let edited = inquire::Editor::new("Edit...")
+            .with_predefined_text(&yaml)
+            .with_validator(yaml_validator)
+            .with_file_extension(".yaml")
+            .prompt()?;
+
+        let parsed = serde_yaml::from_str(&edited)?;
+
+        Ok(parsed)
+    }
+
     pub fn create_from_user_input() -> anyhow::Result<Self> {
         let invoice_nums = Invoice::list()?.into_iter().collect::<HashSet<_>>();
         let receipt_nums = Receipt::list()?.into_iter().collect::<HashSet<_>>();
@@ -124,11 +144,13 @@ impl Receipt {
             .prompt()?
             .value;
 
-        let receipt = Receipt {
+        let mut receipt = Receipt {
             invoice_num,
             date: date_string,
             payment_method,
         };
+
+        receipt = receipt.edit_yaml()?;
 
         Ok(receipt)
     }

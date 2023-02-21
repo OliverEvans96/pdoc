@@ -3,6 +3,7 @@ use std::fs::File;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cli::{print_header, YamlValidator},
     client::Client,
     completion::{LocalAutocompleter, PrefixAutocomplete},
     id::Id,
@@ -17,6 +18,26 @@ pub struct Project {
 }
 
 impl Project {
+    pub fn edit_yaml(&self) -> anyhow::Result<Self> {
+        let yaml = serde_yaml::to_string(&self)?;
+
+        // TODO: Show as markdown code block via termimad
+        print_header("Final YAML");
+        println!("{}", yaml);
+
+        let yaml_validator = YamlValidator::<Project>::new();
+
+        let edited = inquire::Editor::new("Edit...")
+            .with_predefined_text(&yaml)
+            .with_validator(yaml_validator)
+            .with_file_extension(".yaml")
+            .prompt()?;
+
+        let parsed = serde_yaml::from_str(&edited)?;
+
+        Ok(parsed)
+    }
+
     pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
@@ -47,11 +68,13 @@ impl Project {
 
         let client_name = Client::get_or_create_from_user_input()?;
 
-        let project = Self {
+        let mut project = Self {
             name,
             description,
             client_ref: client_name,
         };
+
+        project = project.edit_yaml()?;
 
         Ok(project)
     }

@@ -14,7 +14,7 @@ askama_escape = "0.10.3"
 clap = { version = "4.1.6", features = ["derive"] }
 currency_rs = "1.1.3"
 directories = "4.0.1"
-inquire = { version = "0.5.3", features = ["date"] }
+inquire = { version = "0.5.3", features = ["date", "editor"] }
 latex = "0.3.1"
 serde = "1.0.152"
 serde_yaml = "0.9.17"

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use time::{Date, Duration};
 
 use crate::{
-    cli::{print_header, NumberValidator},
+    cli::{print_header, NumberValidator, YamlValidator},
     client::Client,
     completion::PrefixAutocomplete,
     date::DateString,
@@ -100,6 +100,26 @@ impl Invoice {
         Ok(next)
     }
 
+    pub fn edit_yaml(&self) -> anyhow::Result<Self> {
+        let yaml = serde_yaml::to_string(&self)?;
+
+        // TODO: Show as markdown code block via termimad
+        print_header("Final YAML");
+        println!("{}", yaml);
+
+        let yaml_validator = YamlValidator::<Invoice>::new();
+
+        let edited = inquire::Editor::new("Edit...")
+            .with_predefined_text(&yaml)
+            .with_validator(yaml_validator)
+            .with_file_extension(".yaml")
+            .prompt()?;
+
+        let parsed = serde_yaml::from_str(&edited)?;
+
+        Ok(parsed)
+    }
+
     pub fn create_from_user_input() -> anyhow::Result<Self> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
         let number_validator = NumberValidator::new();
@@ -136,13 +156,15 @@ impl Invoice {
             items.push(item);
         }
 
-        let invoice = Invoice {
+        let mut invoice = Invoice {
             number: invoice_number,
             project_ref: project_name,
             date: invoice_date_string,
             due_date: due_date_string,
             items,
         };
+
+        invoice = invoice.edit_yaml()?;
 
         Ok(invoice)
     }

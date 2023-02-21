@@ -1,4 +1,7 @@
+use std::marker::PhantomData;
+
 use inquire::validator::{StringValidator, Validation};
+use serde::Deserialize;
 
 fn format_title(text: &str) -> String {
     let hbar = "=".repeat(text.len() + 4);
@@ -67,6 +70,29 @@ impl StringValidator for NumberValidator {
         } else {
             let msg = inquire::validator::ErrorMessage::Custom("number required.".to_owned());
             Validation::Invalid(msg)
+        };
+
+        Ok(validation)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct YamlValidator<T: Clone + for<'de> Deserialize<'de>>(PhantomData<T>);
+
+impl<T: Clone + for<'de> Deserialize<'de>> YamlValidator<T> {
+    pub fn new() -> Self {
+        Self(PhantomData::default())
+    }
+}
+
+impl<T: Clone + for<'de> Deserialize<'de>> StringValidator for YamlValidator<T> {
+    fn validate<'a>(&self, input: &'a str) -> Result<Validation, inquire::CustomUserError> {
+        let validation = if let Err(err) = serde_yaml::from_str::<'a, T>(input) {
+            let msg_str = format!("Invalid YAML: {}", err);
+            let msg_err = inquire::validator::ErrorMessage::Custom(msg_str);
+            Validation::Invalid(msg_err)
+        } else {
+            Validation::Valid
         };
 
         Ok(validation)
