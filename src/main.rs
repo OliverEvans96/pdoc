@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use cli::print_title;
 use project::Project;
 
-use crate::{client::Client, invoice::Invoice};
+use crate::{client::Client, invoice::Invoice, receipt::Receipt};
 
 mod address;
 mod cli;
@@ -16,6 +16,7 @@ mod latex;
 mod me;
 mod price;
 mod project;
+mod receipt;
 mod storage;
 
 #[derive(Subcommand)]
@@ -26,6 +27,8 @@ enum Command {
     ListClients,
     /// Generate an invoice.
     Invoice,
+    /// Generate a receipt.
+    Receipt,
     /// Get or create project.
     Project,
 }
@@ -53,6 +56,19 @@ fn generate_invoice() -> anyhow::Result<()> {
     let full_invoice = invoice.collect()?;
 
     full_invoice.render_pdf("out.pdf")?;
+
+    Ok(())
+}
+
+fn generate_receipt() -> anyhow::Result<()> {
+    let receipt = Receipt::create_from_user_input()?;
+    receipt.save()?;
+
+    println!("Receipt: {:#?}", receipt);
+
+    let full_receipt = receipt.collect()?;
+
+    full_receipt.render_pdf("out.pdf")?;
 
     Ok(())
 }
@@ -98,6 +114,7 @@ fn main() -> anyhow::Result<()> {
         Command::Client => get_or_create_client()?,
         Command::ListClients => list_clients()?,
         Command::Invoice => generate_invoice()?,
+        Command::Receipt => generate_receipt()?,
         Command::Project => get_or_create_project()?,
     }
 

@@ -18,6 +18,7 @@ inquire = { version = "0.5.3", features = ["date"] }
 latex = "0.3.1"
 serde = "1.0.152"
 serde_yaml = "0.9.17"
+strum = { version = "0.24.1", features = ["derive"] }
 tempfile = "3.3.0"
 texrender = "0.3.3"
 thiserror = "1.0.38"

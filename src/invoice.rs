@@ -1,13 +1,13 @@
 use std::{fs::File, path::Path};
 
 use askama::Template;
-use inquire::validator::{StringValidator, Validation};
 use serde::{Deserialize, Serialize};
 use time::{Date, Duration};
 
 use crate::{
-    cli::print_header,
+    cli::{print_header, NumberValidator},
     client::Client,
+    completion::PrefixAutocomplete,
     date::DateString,
     id::Id,
     latex::{compile_latex, Asset, Latex},
@@ -57,29 +57,6 @@ pub struct Invoice {
     pub items: Vec<LineItem>,
 }
 
-#[derive(Clone, Copy, Debug)]
-struct NumberValidator;
-
-impl NumberValidator {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl StringValidator for NumberValidator {
-    fn validate(&self, input: &str) -> Result<Validation, inquire::CustomUserError> {
-        let is_valid = input.chars().all(|c| c.is_numeric());
-        let validation = if is_valid {
-            Validation::Valid
-        } else {
-            let msg = inquire::validator::ErrorMessage::Custom("number required.".to_owned());
-            Validation::Invalid(msg)
-        };
-
-        Ok(validation)
-    }
-}
-
 impl Invoice {
     pub fn list() -> anyhow::Result<Vec<u32>> {
         let invoices_dir = get_invoices_dir()?;
@@ -97,6 +74,22 @@ impl Invoice {
             .collect();
 
         Ok(invoice_numbers)
+    }
+
+    pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let file = File::open(path.as_ref())?;
+        let invoice: Invoice = serde_yaml::from_reader(file)?;
+
+        Ok(invoice)
+    }
+
+    pub fn load(number: u32) -> anyhow::Result<Self> {
+        let invoices_dir = get_invoices_dir()?;
+        let filename = format!("{}.yaml", number);
+        let path = invoices_dir.join(filename);
+        let invoice = Invoice::load_from_path(path)?;
+
+        Ok(invoice)
     }
 
     pub fn get_next_number() -> anyhow::Result<u32> {
@@ -204,6 +197,35 @@ impl FullInvoice {
         compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
 
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ClientAutocomplete {
+    client_names: Vec<String>,
+    lowercase_names: Vec<String>,
+}
+
+impl ClientAutocomplete {
+    pub fn new(client_ids: Vec<Id>) -> Self {
+        let client_names: Vec<String> = client_ids.into_iter().map(Into::into).collect();
+
+        let lowercase_names = client_names.iter().map(|s| s.to_lowercase()).collect();
+
+        Self {
+            client_names,
+            lowercase_names,
+        }
+    }
+}
+
+impl PrefixAutocomplete for ClientAutocomplete {
+    fn get_options(&self) -> &[String] {
+        &self.client_names
+    }
+
+    fn get_lowercase_options(&self) -> &[String] {
+        &self.lowercase_names
     }
 }
 

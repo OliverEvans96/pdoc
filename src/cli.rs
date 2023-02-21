@@ -1,3 +1,5 @@
+use inquire::validator::{StringValidator, Validation};
+
 fn format_title(text: &str) -> String {
     let hbar = "=".repeat(text.len() + 4);
     let title_line = format!("= {} =", text);
@@ -45,5 +47,28 @@ mod tests {
         let expected = concat!("\n", "Potato\n", "======\n",);
 
         assert_eq!(formatted, expected)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct NumberValidator;
+
+impl NumberValidator {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl StringValidator for NumberValidator {
+    fn validate(&self, input: &str) -> Result<Validation, inquire::CustomUserError> {
+        let is_valid = input.chars().all(|c| c.is_numeric());
+        let validation = if is_valid {
+            Validation::Valid
+        } else {
+            let msg = inquire::validator::ErrorMessage::Custom("number required.".to_owned());
+            Validation::Invalid(msg)
+        };
+
+        Ok(validation)
     }
 }

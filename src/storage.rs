@@ -2,7 +2,7 @@ use std::{fs::File, path::PathBuf};
 
 use anyhow::anyhow;
 
-use crate::{client::Client, id::Id, me::Me, project::Project};
+use crate::{client::Client, id::Id, invoice::Invoice, me::Me, project::Project};
 
 fn get_data_dir() -> anyhow::Result<PathBuf> {
     let project_dirs = directories::ProjectDirs::from("", "", "pdoc")
@@ -31,6 +31,13 @@ pub fn get_invoices_dir() -> anyhow::Result<PathBuf> {
     let invoices_dir = data_dir.join("invoices");
     std::fs::create_dir_all(&invoices_dir)?;
     Ok(invoices_dir)
+}
+
+pub fn get_receipts_dir() -> anyhow::Result<PathBuf> {
+    let data_dir = get_data_dir()?;
+    let receipts_dir = data_dir.join("receipts");
+    std::fs::create_dir_all(&receipts_dir)?;
+    Ok(receipts_dir)
 }
 
 /// Reads personal info from yaml in app data dir
@@ -62,4 +69,14 @@ pub fn find_client(id: &Id) -> anyhow::Result<Client> {
     let client: Client = serde_yaml::from_reader(file)?;
 
     Ok(client)
+}
+
+pub fn find_invoice(number: u32) -> anyhow::Result<Invoice> {
+    let dir = get_invoices_dir()?;
+    let filename = format!("{}.yaml", number);
+    let path = dir.join(filename);
+    let file = File::open(path)?;
+    let invoice: Invoice = serde_yaml::from_reader(file)?;
+
+    Ok(invoice)
 }
