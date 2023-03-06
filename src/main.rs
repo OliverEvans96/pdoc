@@ -115,7 +115,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO specify PDF output location from command line?
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
-// TODO pdoc TOML config file (e.g. to set data dir)
 // TODO generate beancount files?
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
