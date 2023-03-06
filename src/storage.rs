@@ -1,6 +1,6 @@
 use std::{fs::File, path::PathBuf};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 
 use crate::{
     client::Client, config::read_config, id::Id, invoice::Invoice, me::Me, project::Project,
@@ -29,11 +29,26 @@ fn get_default_data_dir() -> anyhow::Result<PathBuf> {
     return Ok(data_dir.to_owned());
 }
 
+fn expand_tilde(path: PathBuf) -> PathBuf {
+    let path_str = path.as_os_str().to_string_lossy();
+    let expanded_str = shellexpand::tilde(&path_str).to_string();
+    let expanded_path = expanded_str.into();
+
+    expanded_path
+}
+
 pub fn get_data_dir() -> anyhow::Result<PathBuf> {
-    let data_dir_opt = read_config().ok().and_then(|c| c.data_dir);
+    let data_dir_opt = read_config()
+        .ok()
+        .and_then(|config| config.data_dir)
+        .map(expand_tilde);
 
     if let Some(data_dir) = data_dir_opt {
-        Ok(data_dir)
+        if data_dir.is_absolute() {
+            Ok(data_dir)
+        } else {
+            bail!("data_dir must be absolute (found {:?})", data_dir)
+        }
     } else {
         get_default_data_dir()
     }

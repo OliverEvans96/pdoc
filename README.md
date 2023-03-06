@@ -7,5 +7,7 @@
 The configuration path is `~/.config/pdoc/config.toml`.
 Current options include:
 
-* `data_dir` - directory where produced yaml and PDF files are stored.
+* `data_dir` - directory where produced yaml and PDF files are stored
+  * must be an absolute path
+  * `~` will be expanded to the current user's home directory
 
