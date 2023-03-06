@@ -23,3 +23,4 @@ tempfile = "3.3.0"
 texrender = "0.3.3"
 thiserror = "1.0.38"
 time = { version = "0.3.17", features = ["serde", "macros", "local-offset", "parsing", "formatting"] }
+toml = "0.7.2"

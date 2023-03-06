@@ -2,14 +2,41 @@ use std::{fs::File, path::PathBuf};
 
 use anyhow::anyhow;
 
-use crate::{client::Client, id::Id, invoice::Invoice, me::Me, project::Project};
+use crate::{
+    client::Client, config::read_config, id::Id, invoice::Invoice, me::Me, project::Project,
+};
 
-pub fn get_data_dir() -> anyhow::Result<PathBuf> {
+fn get_config_dir() -> anyhow::Result<PathBuf> {
+    let project_dirs = directories::ProjectDirs::from("", "", "pdoc")
+        .ok_or(anyhow!("Couldn't get data directory"))?;
+    let data_dir = project_dirs.config_dir();
+
+    return Ok(data_dir.to_owned());
+}
+
+pub fn get_config_file_path() -> anyhow::Result<PathBuf> {
+    let config_dir = get_config_dir()?;
+    let config_path = config_dir.join("config.toml");
+
+    Ok(config_path)
+}
+
+fn get_default_data_dir() -> anyhow::Result<PathBuf> {
     let project_dirs = directories::ProjectDirs::from("", "", "pdoc")
         .ok_or(anyhow!("Couldn't get data directory"))?;
     let data_dir = project_dirs.data_dir();
 
     return Ok(data_dir.to_owned());
+}
+
+pub fn get_data_dir() -> anyhow::Result<PathBuf> {
+    let data_dir_opt = read_config().ok().and_then(|c| c.data_dir);
+
+    if let Some(data_dir) = data_dir_opt {
+        Ok(data_dir)
+    } else {
+        get_default_data_dir()
+    }
 }
 
 pub fn get_projects_dir() -> anyhow::Result<PathBuf> {

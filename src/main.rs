@@ -8,6 +8,7 @@ mod address;
 mod cli;
 mod client;
 mod completion;
+mod config;
 mod contact;
 mod date;
 mod id;
