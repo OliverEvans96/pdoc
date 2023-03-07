@@ -126,11 +126,20 @@ fn get_or_create_project() -> anyhow::Result<()> {
 
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
-// TODO generate beancount files?
 // TODO combine `me.yaml` and `config.toml`?
+// TODO beancount config in config.toml
+//      - enable/disable
+//      - AccountsReceivable name
+//      - income account name format
+//      - narration format?
+//      - payee? tags?
 // TODO edit me.yaml at startup if invalid
 // TODO switch from `time` crate to `chrono`?
-// TODO support alternate currencies
+// TODO support non-USD currencies
+// TODO more `inquire` help texts (especially indicate which prompts are skippable)
+// TODO beancount decimal math
+// TODO beancount for receipts
+// TODO master beancount file that imports all others?
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
