@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::{fmt, io};
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use texrender::TexRender;
 
 // Inspired by https://users.rust-lang.org/t/why-doesnt-vec-u8-implement-std-fmt-write/13200/5
@@ -62,6 +62,8 @@ pub fn compile_latex(
             .add_asset_from_bytes(&asset.filename, &asset.data)
             .context("adding LaTeX asset to renderer")?;
     }
+
+    println!("Generating PDF...");
 
     let pdf_data = renderer.render().context("rendering LaTeX to PDF")?;
 
