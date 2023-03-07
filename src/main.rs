@@ -124,7 +124,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
 // TODO generate beancount files?
-// TODO Don't hardcode payment methods
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 

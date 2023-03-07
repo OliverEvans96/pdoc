@@ -8,7 +8,6 @@ use std::{
 use anyhow::{bail, Context};
 use askama::Template;
 use serde::{Deserialize, Serialize};
-use strum::{EnumIter, IntoEnumIterator};
 
 use crate::{
     cli::{print_header, YamlValidator},
@@ -16,31 +15,10 @@ use crate::{
     date::DateString,
     invoice::Invoice,
     latex::{compile_latex, Asset, Latex},
-    me::Me,
+    me::{Me, PaymentMethod},
     project::Project,
     storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir, read_me},
 };
-
-// TODO should be user-specified in me.yaml
-// (also, this name conflicts with me::PaymentMethod)
-#[derive(Clone, Copy, Debug, Deserialize, EnumIter, Eq, PartialEq, Serialize)]
-pub enum PaymentMethod {
-    PersonalCheck,
-    Venmo,
-    PayPal,
-}
-
-impl Display for PaymentMethod {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            PaymentMethod::PersonalCheck => "Personal Check",
-            PaymentMethod::Venmo => "Venmo",
-            PaymentMethod::PayPal => "PayPal",
-        };
-
-        f.write_str(s)
-    }
-}
 
 struct SelectOption<T> {
     pub value: T,
@@ -58,7 +36,7 @@ impl<T> Display for SelectOption<T> {
 pub struct Receipt {
     pub invoice_num: u32,
     pub date: DateString,
-    pub payment_method: PaymentMethod,
+    pub payment_method: String,
 }
 
 impl Receipt {
@@ -103,6 +81,8 @@ impl Receipt {
     }
 
     pub fn create_from_user_input() -> anyhow::Result<Self> {
+        let me = Me::load().context("loading personal info")?;
+
         let invoice_nums = Invoice::list()
             .context("listing invoices")?
             .into_iter()
@@ -160,12 +140,19 @@ impl Receipt {
         let date_string = DateString::try_new(chrono_date.to_string())
             .context("parsing invoice DateString from user input")?;
 
-        let payment_options = PaymentMethod::iter()
-            .map(|method| SelectOption {
-                value: method,
-                description: method.to_string(),
+        let payment_options = me
+            .payment
+            .into_iter()
+            .map(|method| match method {
+                PaymentMethod::Text(text) => text,
+                PaymentMethod::Link { text, .. } => text,
+            })
+            .map(|text| SelectOption {
+                value: text.clone(),
+                description: text,
             })
             .collect();
+
         let payment_method = inquire::Select::new("Payment method:", payment_options)
             .prompt()
             .context("reading payment method from user input")?
