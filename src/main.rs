@@ -118,9 +118,6 @@ fn get_or_create_project() -> anyhow::Result<()> {
     Ok(())
 }
 
-// TODO unique name/number validators
-// TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
-// TODO specify PDF output location from command line?
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
 // TODO generate beancount files?
