@@ -1,4 +1,7 @@
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -76,6 +79,7 @@ impl Me {
 
         Ok(parsed)
     }
+
     pub fn create_from_user_input() -> anyhow::Result<Me> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
@@ -93,6 +97,7 @@ impl Me {
         let contact = ContactInfo::create_from_user_input()
             .context("reading contact info from user input")?;
 
+        println!("Acceptable payment methods:");
         let mut payment_methods = Vec::new();
         while let Some(method) = PaymentMethod::create_from_user_input()
             .context("creating payment method from user input")?
@@ -130,12 +135,37 @@ impl Me {
         Ok(me)
     }
 
-    pub fn load() -> anyhow::Result<Self> {
+    pub fn path() -> anyhow::Result<PathBuf> {
         let data_dir = get_data_dir().context("getting data directory")?;
         let filename = "me.yaml";
         let path = data_dir.join(filename);
-        let client = Me::load_from_path(path).context("loading client from file")?;
 
-        Ok(client)
+        Ok(path)
+    }
+
+    pub fn load() -> anyhow::Result<Self> {
+        let path = Me::path()?;
+        let me = Me::load_from_path(path).context("loading personal info from file")?;
+
+        Ok(me)
+    }
+
+    pub fn create_if_necessary() -> anyhow::Result<()> {
+        let file_exists = !Me::path()
+            .context("getting personal info yaml path")?
+            .exists();
+
+        if file_exists {
+            println!("Welcome to pdoc! Enter your personal info to begin.");
+            let me = Me::create_from_user_input().context("creating personal info")?;
+            me.save().context("saving personal info")?
+        } else {
+            if let Err(err) = Me::load() {
+                eprintln!("Error parsing personal info: {:#?}", err);
+                eprintln!("Please correct the issue before continuing.");
+            }
+        }
+
+        Ok(())
     }
 }

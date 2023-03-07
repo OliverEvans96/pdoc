@@ -131,6 +131,8 @@ fn main() -> anyhow::Result<()> {
 
     print_title("pdoc");
 
+    Me::create_if_necessary()?;
+
     match opts.command {
         Command::Client => get_or_create_client()?,
         Command::ListClients => list_clients()?,
