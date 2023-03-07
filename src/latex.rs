@@ -1,7 +1,8 @@
 use std::path::Path;
 use std::{fmt, io};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
+use texrender::TexRender;
 
 // Inspired by https://users.rust-lang.org/t/why-doesnt-vec-u8-implement-std-fmt-write/13200/5
 pub struct ToFmtWrite<T>(pub T);
@@ -54,36 +55,17 @@ pub fn compile_latex(
     pdf_output_path: impl AsRef<Path>,
     assets: &[Asset],
 ) -> anyhow::Result<()> {
-    let tmp_dir = tempfile::tempdir()?;
-    let tmp_dir_path = tmp_dir.path();
+    let mut renderer = TexRender::from_bytes(tex.as_bytes().to_vec());
 
-    let basename = "invoice";
-    let tex_filename = format!("{}.tex", basename);
-    let pdf_filename = format!("{}.pdf", basename);
-
-    let tex_path = tmp_dir_path.join(tex_filename);
-    let pdf_path = tmp_dir_path.join(pdf_filename);
-
-    // Write latex file
-    std::fs::write(&tex_path, tex.as_bytes())?;
-
-    // Copy assets to compilation directory
     for asset in assets {
-        let filename = tmp_dir.path().join(&asset.filename);
-        std::fs::write(filename, &asset.data)?;
+        renderer
+            .add_asset_from_bytes(&asset.filename, &asset.data)
+            .context("adding LaTeX asset to renderer")?;
     }
 
-    let mut compile_command = std::process::Command::new("pdflatex");
+    let pdf_data = renderer.render().context("rendering LaTeX to PDF")?;
 
-    compile_command.current_dir(&tmp_dir_path).arg(&tex_path);
-
-    let exit_status = compile_command.status()?;
-
-    if !exit_status.success() {
-        bail!("Non-success exit status: {:?}", exit_status);
-    }
-
-    std::fs::copy(pdf_path, pdf_output_path)?;
+    std::fs::write(pdf_output_path, pdf_data).context("writing rendered PDF to file")?;
 
     Ok(())
 }

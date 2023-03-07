@@ -11,3 +11,7 @@ Current options include:
   * must be an absolute path
   * `~` will be expanded to the current user's home directory
 
+
+## Dependencies
+
+This program requires `latexmk` to be available on the system to render PDFs (via the `texrender` crate).

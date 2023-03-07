@@ -120,12 +120,11 @@ fn get_or_create_project() -> anyhow::Result<()> {
 
 // TODO unique name/number validators
 // TODO use a trait for loading/saving from id? (but invoice uses number - can it also be an id?)
-// TODO render latex to pdf using tectonic or texrender crates
-// TODO quiet latex rendering by default
 // TODO specify PDF output location from command line?
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
 // TODO generate beancount files?
+// TODO Don't hardcode payment methods
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
