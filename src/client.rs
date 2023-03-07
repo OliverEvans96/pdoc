@@ -1,5 +1,6 @@
 use std::{fs::File, path::Path};
 
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -21,7 +22,7 @@ pub struct Client {
 
 impl Client {
     pub fn edit_yaml(&self) -> anyhow::Result<Self> {
-        let yaml = serde_yaml::to_string(&self)?;
+        let yaml = serde_yaml::to_string(&self).context("serializing client yaml")?;
 
         // TODO: Show as markdown code block via termimad
         print_header("Final YAML");
@@ -33,9 +34,10 @@ impl Client {
             .with_predefined_text(&yaml)
             .with_validator(yaml_validator)
             .with_file_extension(".yaml")
-            .prompt()?;
+            .prompt()
+            .context("reading edited client yaml from user input")?;
 
-        let parsed = serde_yaml::from_str(&edited)?;
+        let parsed = serde_yaml::from_str(&edited).context("parsing edited client yaml")?;
 
         Ok(parsed)
     }
@@ -43,18 +45,20 @@ impl Client {
     pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let client_names = Client::list()?;
+        let client_names = Client::list().context("listing clients")?;
         let autocomplete = LocalAutocompleter::new(ClientAutocomplete::new(client_names.clone()));
 
         let name: Id = inquire::Text::new("Client Name:")
             .with_autocomplete(autocomplete)
             .with_validator(required_validator)
-            .prompt()?
+            .prompt()
+            .context("reading client name from user input")?
             .into();
 
         if !client_names.contains(&name) {
-            let client = Client::create_from_user_input_with_name(name.clone())?;
-            client.save()?;
+            let client = Client::create_from_user_input_with_name(name.clone())
+                .context("creating client from user input")?;
+            client.save().context("saving client yaml file")?;
         };
 
         Ok(name)
@@ -62,10 +66,12 @@ impl Client {
 
     pub fn create_from_user_input_with_name(name: Id) -> anyhow::Result<Self> {
         println!("Mailing address:");
-        let address = MailingAddress::create_from_user_input()?;
+        let address = MailingAddress::create_from_user_input()
+            .context("creating mailing address from user input")?;
 
         println!("Contact info:");
-        let contact = ContactInfo::create_from_user_input()?;
+        let contact = ContactInfo::create_from_user_input()
+            .context("creating contact info from user input")?;
 
         let mut client = Self {
             name,
@@ -73,7 +79,7 @@ impl Client {
             contact,
         };
 
-        client = client.edit_yaml()?;
+        client = client.edit_yaml().context("editing client yaml")?;
 
         Ok(client)
     }
@@ -83,40 +89,42 @@ impl Client {
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        let clients_dir = get_clients_dir()?;
+        let clients_dir = get_clients_dir().context("getting clients directory")?;
         let path = clients_dir.join(self.filename());
-        let file = File::create(path)?;
+        let file = File::create(path).context("creating client yaml file")?;
 
-        serde_yaml::to_writer(file, self)?;
+        serde_yaml::to_writer(file, self).context("serializing client yaml")?;
 
         Ok(())
     }
 
     pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
-        let file = File::open(path.as_ref())?;
-        let client: Client = serde_yaml::from_reader(file)?;
+        let file = File::open(path.as_ref()).context("opening client yaml file")?;
+        let client: Client = serde_yaml::from_reader(file).context("deserializing client yaml")?;
 
         Ok(client)
     }
 
     pub fn load(name: Id) -> anyhow::Result<Self> {
-        let clients_dir = get_clients_dir()?;
+        let clients_dir = get_clients_dir().context("getting clients directory")?;
         let filename = name.to_filename();
         let path = clients_dir.join(filename);
-        let client = Client::load_from_path(path)?;
+        let client = Client::load_from_path(path).context("loading client from file")?;
 
         Ok(client)
     }
 
     pub fn list() -> anyhow::Result<Vec<Id>> {
-        let clients_dir = get_clients_dir()?;
+        let clients_dir = get_clients_dir().context("getting clients directory")?;
 
         let client_names = clients_dir
-            .read_dir()?
+            .read_dir()
+            .context("listing files in clients directory")?
             .map(|entry_res| -> anyhow::Result<Id> {
-                let entry = entry_res?;
+                let entry = entry_res.context("reading directory entry")?;
                 let filename = entry.file_name();
-                let name = Id::from_filename(filename)?;
+                let name =
+                    Id::from_filename(filename).context("parsing client id from filename")?;
                 Ok(name)
             })
             // Ignore any filenames that could not be parsed

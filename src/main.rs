@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::{Parser, Subcommand};
 use cli::print_title;
 use project::Project;
@@ -43,7 +44,8 @@ struct Opts {
 }
 
 fn get_or_create_client() -> anyhow::Result<()> {
-    let client = Client::get_or_create_from_user_input()?;
+    let client = Client::get_or_create_from_user_input()
+        .context("getting or creating client from user input")?;
 
     println!("got client: {:#?}", client);
 
@@ -51,24 +53,28 @@ fn get_or_create_client() -> anyhow::Result<()> {
 }
 
 fn generate_invoice() -> anyhow::Result<()> {
-    let invoice = Invoice::create_from_user_input()?;
-    invoice.save()?;
+    let invoice = Invoice::create_from_user_input().context("creating invoice from user input")?;
+    invoice.save().context("saving invoice yaml")?;
 
-    let full_invoice = invoice.collect()?;
+    let full_invoice = invoice
+        .collect()
+        .context("collecting all invoice information")?;
 
-    let path = full_invoice.save_pdf()?;
+    let path = full_invoice.save_pdf().context("saving invoice PDF")?;
     println!("\nInvoice PDF saved to {:?}", path);
 
     Ok(())
 }
 
 fn generate_receipt() -> anyhow::Result<()> {
-    let receipt = Receipt::create_from_user_input()?;
-    receipt.save()?;
+    let receipt = Receipt::create_from_user_input().context("creating receipt from user input")?;
+    receipt.save().context("saving receipt")?;
 
-    let full_receipt = receipt.collect()?;
+    let full_receipt = receipt
+        .collect()
+        .context("collecting all receipt information")?;
 
-    let path = full_receipt.save_pdf()?;
+    let path = full_receipt.save_pdf().context("saving receipt PDF")?;
     println!("\nReceipt PDF saved to {:?}", path);
 
     Ok(())
@@ -78,11 +84,14 @@ fn edit_personal_info() -> anyhow::Result<()> {
     print_header("Edit personal info");
 
     if let Ok(me) = Me::load() {
-        let edited_me = me.edit_yaml()?;
-        edited_me.save()?;
+        let edited_me = me.edit_yaml().context("editing personal info yaml")?;
+        edited_me
+            .save()
+            .context("saving edited personal info yaml")?;
     } else {
-        let me = Me::create_from_user_input()?;
-        me.save()?;
+        let me =
+            Me::create_from_user_input().context("creating personal info data from user input")?;
+        me.save().context("saving personal info yaml")?;
     }
 
     println!("\nPersonal info saved!");
@@ -91,7 +100,7 @@ fn edit_personal_info() -> anyhow::Result<()> {
 }
 
 fn list_clients() -> anyhow::Result<()> {
-    let client_names = Client::list()?;
+    let client_names = Client::list().context("listing clients")?;
 
     for name in client_names {
         println!("- {}", name)
@@ -101,7 +110,8 @@ fn list_clients() -> anyhow::Result<()> {
 }
 
 fn get_or_create_project() -> anyhow::Result<()> {
-    let project = Project::get_or_create_from_user_input()?;
+    let project = Project::get_or_create_from_user_input()
+        .context("getting or creating project from user input")?;
 
     println!("project: {:#?}", project);
 

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -13,12 +14,14 @@ impl ContactInfo {
         let email = inquire::Text::new("Email:")
             .with_placeholder("test@example.com")
             .with_validator(required_validator.clone())
-            .prompt()?;
+            .prompt()
+            .context("reading email from user input")?;
 
         let phone = inquire::Text::new("Phone:")
             .with_placeholder("(412) 555-1827")
             .with_validator(required_validator)
-            .prompt()?;
+            .prompt()
+            .context("reading phone number from user input")?;
 
         let contact = Self { email, phone };
 

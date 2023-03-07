@@ -1,3 +1,4 @@
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -16,27 +17,32 @@ impl MailingAddress {
         let addr1 = inquire::Text::new("Address Line 1:")
             .with_placeholder("123 Happy Lane")
             .with_validator(required_validator.clone())
-            .prompt()?;
+            .prompt()
+            .context("reading address line 1 from user input")?;
 
         let addr2 = inquire::Text::new("Address Line 2 (optional):")
             .with_placeholder("Apt. 7")
-            .prompt_skippable()?
+            .prompt_skippable()
+            .context("reading address line 2 from user input")?
             // Convert Some("") to None
             .filter(|line| !line.is_empty());
 
         let city = inquire::Text::new("City:")
             .with_placeholder("Springfield")
             .with_validator(required_validator.clone())
-            .prompt()?;
+            .prompt()
+            .context("reading city from user input")?;
 
         let state = inquire::Text::new("State:")
             .with_placeholder("Ohio")
-            .prompt()?;
+            .prompt()
+            .context("reading state from user input")?;
 
         let zip = inquire::Text::new("Zipcode:")
             .with_placeholder("12345")
             .with_validator(required_validator)
-            .prompt()?;
+            .prompt()
+            .context("reading zipcode from user input")?;
 
         let contact = Self {
             addr1,

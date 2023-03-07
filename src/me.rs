@@ -1,5 +1,6 @@
 use std::{fs::File, path::Path};
 
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -18,13 +19,15 @@ pub enum PaymentMethod {
 impl PaymentMethod {
     pub fn create_from_user_input() -> anyhow::Result<Option<Self>> {
         let maybe_description = inquire::Text::new("Payment method:")
-            .prompt_skippable()?
+            .prompt_skippable()
+            .context("reading payment method from user input")?
             // Convert Some("") to None
             .filter(|line| !line.is_empty());
 
         if let Some(description) = maybe_description {
             let maybe_url = inquire::Text::new("Add link URL?")
-                .prompt_skippable()?
+                .prompt_skippable()
+                .context("reading link URL from user input")?
                 // Convert Some("") to None
                 .filter(|line| !line.is_empty());
 
@@ -54,7 +57,7 @@ pub struct Me {
 
 impl Me {
     pub fn edit_yaml(&self) -> anyhow::Result<Self> {
-        let yaml = serde_yaml::to_string(&self)?;
+        let yaml = serde_yaml::to_string(&self).context("serializing personal info yaml")?;
 
         // TODO: Show as markdown code block via termimad
         print_header("Final YAML");
@@ -66,9 +69,10 @@ impl Me {
             .with_predefined_text(&yaml)
             .with_validator(yaml_validator)
             .with_file_extension(".yaml")
-            .prompt()?;
+            .prompt()
+            .context("reading edited personal info yaml from user input")?;
 
-        let parsed = serde_yaml::from_str(&edited)?;
+        let parsed = serde_yaml::from_str(&edited).context("parsing edited personal info yaml")?;
 
         Ok(parsed)
     }
@@ -77,17 +81,22 @@ impl Me {
 
         let name: String = inquire::Text::new("Your Name:")
             .with_validator(required_validator)
-            .prompt()?
+            .prompt()
+            .context("reading name from user input")?
             .into();
 
         println!("Mailing address:");
-        let address = MailingAddress::create_from_user_input()?;
+        let address = MailingAddress::create_from_user_input()
+            .context("reading mailing address from user input")?;
 
         println!("Contact info:");
-        let contact = ContactInfo::create_from_user_input()?;
+        let contact = ContactInfo::create_from_user_input()
+            .context("reading contact info from user input")?;
 
         let mut payment_methods = Vec::new();
-        while let Some(method) = PaymentMethod::create_from_user_input()? {
+        while let Some(method) = PaymentMethod::create_from_user_input()
+            .context("creating payment method from user input")?
+        {
             payment_methods.push(method);
         }
 
@@ -98,34 +107,34 @@ impl Me {
             payment: payment_methods,
         };
 
-        me = me.edit_yaml()?;
+        me = me.edit_yaml().context("editing personal info yaml")?;
 
         Ok(me)
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        let data_dir = get_data_dir()?;
-        std::fs::create_dir_all(&data_dir)?;
+        let data_dir = get_data_dir().context("getting data directory")?;
+        std::fs::create_dir_all(&data_dir).context("creating data directory")?;
         let path = data_dir.join("me.yaml");
-        let file = File::create(path)?;
+        let file = File::create(path).context("opening personal info yaml file")?;
 
-        serde_yaml::to_writer(file, self)?;
+        serde_yaml::to_writer(file, self).context("serializing personal info yaml")?;
 
         Ok(())
     }
 
     pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
-        let file = File::open(path.as_ref())?;
-        let me: Me = serde_yaml::from_reader(file)?;
+        let file = File::open(path.as_ref()).context("opening personal info yaml file")?;
+        let me: Me = serde_yaml::from_reader(file).context("deserializing personal info yaml")?;
 
         Ok(me)
     }
 
     pub fn load() -> anyhow::Result<Self> {
-        let data_dir = get_data_dir()?;
+        let data_dir = get_data_dir().context("getting data directory")?;
         let filename = "me.yaml";
         let path = data_dir.join(filename);
-        let client = Me::load_from_path(path)?;
+        let client = Me::load_from_path(path).context("loading client from file")?;
 
         Ok(client)
     }

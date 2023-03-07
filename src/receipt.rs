@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use askama::Template;
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
@@ -63,10 +63,11 @@ pub struct Receipt {
 
 impl Receipt {
     pub fn list() -> anyhow::Result<Vec<u32>> {
-        let receipts_dir = get_receipts_dir()?;
+        let receipts_dir = get_receipts_dir().context("getting receipts directory")?;
 
         let receipt_numbers: Vec<u32> = receipts_dir
-            .read_dir()?
+            .read_dir()
+            .context("listing files in receipts directory")?
             .filter_map(|entry_res| {
                 let entry = entry_res.ok()?;
                 let path = entry.path();
@@ -81,7 +82,7 @@ impl Receipt {
     }
 
     pub fn edit_yaml(&self) -> anyhow::Result<Self> {
-        let yaml = serde_yaml::to_string(&self)?;
+        let yaml = serde_yaml::to_string(&self).context("serializing receipt yaml")?;
 
         // TODO: Show as markdown code block via termimad
         print_header("Final YAML");
@@ -93,16 +94,23 @@ impl Receipt {
             .with_predefined_text(&yaml)
             .with_validator(yaml_validator)
             .with_file_extension(".yaml")
-            .prompt()?;
+            .prompt()
+            .context("reading edited receipt yaml from user input")?;
 
-        let parsed = serde_yaml::from_str(&edited)?;
+        let parsed = serde_yaml::from_str(&edited).context("deserializing edited receipt yaml")?;
 
         Ok(parsed)
     }
 
     pub fn create_from_user_input() -> anyhow::Result<Self> {
-        let invoice_nums = Invoice::list()?.into_iter().collect::<HashSet<_>>();
-        let receipt_nums = Receipt::list()?.into_iter().collect::<HashSet<_>>();
+        let invoice_nums = Invoice::list()
+            .context("listing invoices")?
+            .into_iter()
+            .collect::<HashSet<_>>();
+        let receipt_nums = Receipt::list()
+            .context("listing receipts")?
+            .into_iter()
+            .collect::<HashSet<_>>();
 
         let unpaid_invoice_nums = &invoice_nums - &receipt_nums;
 
@@ -135,7 +143,9 @@ impl Receipt {
 
         invoice_options.sort_by_key(|opt| u32::MAX - opt.value);
 
-        let invoice_choice = inquire::Select::new("Invoice number:", invoice_options).prompt()?;
+        let invoice_choice = inquire::Select::new("Invoice number:", invoice_options)
+            .prompt()
+            .context("reading invoice number for receipt from user input")?;
 
         let invoice_num = invoice_choice.value;
 
@@ -143,9 +153,12 @@ impl Receipt {
 
         print_header(&format!("Create receipt {}", invoice_num));
 
-        let chrono_date = inquire::DateSelect::new("Receipt date:").prompt()?;
+        let chrono_date = inquire::DateSelect::new("Receipt date:")
+            .prompt()
+            .context("reading receipt date from user input")?;
         // Convert `chrono::Date` to `time::Date`.
-        let date_string = DateString::try_new(chrono_date.to_string())?;
+        let date_string = DateString::try_new(chrono_date.to_string())
+            .context("parsing invoice DateString from user input")?;
 
         let payment_options = PaymentMethod::iter()
             .map(|method| SelectOption {
@@ -154,7 +167,8 @@ impl Receipt {
             })
             .collect();
         let payment_method = inquire::Select::new("Payment method:", payment_options)
-            .prompt()?
+            .prompt()
+            .context("reading payment method from user input")?
             .value;
 
         let mut receipt = Receipt {
@@ -163,7 +177,7 @@ impl Receipt {
             payment_method,
         };
 
-        receipt = receipt.edit_yaml()?;
+        receipt = receipt.edit_yaml().context("editing receipt yaml")?;
 
         Ok(receipt)
     }
@@ -173,20 +187,20 @@ impl Receipt {
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        let projects_dir = get_receipts_dir()?;
+        let projects_dir = get_receipts_dir().context("getting receipts directory")?;
         let path = projects_dir.join(self.filename());
-        let file = File::create(path)?;
+        let file = File::create(path).context("creating receipt yaml file")?;
 
-        serde_yaml::to_writer(file, self)?;
+        serde_yaml::to_writer(file, self).context("serializing receipt yaml")?;
 
         Ok(())
     }
 
     pub fn collect(self) -> anyhow::Result<FullReceipt> {
-        let me = read_me()?;
-        let invoice = find_invoice(self.invoice_num)?;
-        let project = find_project(&invoice.project_ref)?;
-        let client = find_client(&project.client_ref)?;
+        let me = read_me().context("reading personal info")?;
+        let invoice = find_invoice(self.invoice_num).context("finding invoice")?;
+        let project = find_project(&invoice.project_ref).context("finding project")?;
+        let client = find_client(&project.client_ref).context("finding client")?;
 
         let full_receipt = FullReceipt {
             me,
@@ -218,23 +232,24 @@ impl FullReceipt {
     }
 
     pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
-        let rendered_tex = Template::render(self)?;
+        let rendered_tex = Template::render(self).context("rendering receipt template")?;
 
         let invoice_class = Asset {
             data: include_bytes!("../assets/CSMinimalInvoice.cls").to_vec(),
             filename: "CSMinimalInvoice.cls".to_owned(),
         };
         let assets = &[invoice_class];
-        compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)?;
+        compile_latex(&rendered_tex, pdf_output_path.as_ref(), assets)
+            .context("compiling receipt LaTeX to PDF")?;
 
         Ok(())
     }
 
     pub fn save_pdf(&self) -> anyhow::Result<PathBuf> {
-        let pdfs_dir = get_pdfs_dir()?;
+        let pdfs_dir = get_pdfs_dir().context("getting receipts directory")?;
         let path = pdfs_dir.join(self.filename());
 
-        self.render_pdf(&path)?;
+        self.render_pdf(&path).context("generating receipt PDF")?;
 
         Ok(path)
     }
