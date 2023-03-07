@@ -60,8 +60,9 @@ fn generate_invoice() -> anyhow::Result<()> {
         .collect()
         .context("collecting all invoice information")?;
 
+    println!("\nGenerating PDF...");
     let path = full_invoice.save_pdf().context("saving invoice PDF")?;
-    println!("\nInvoice PDF saved to {:?}", path);
+    println!("Invoice PDF saved to {:?}", path);
 
     Ok(())
 }
@@ -74,8 +75,9 @@ fn generate_receipt() -> anyhow::Result<()> {
         .collect()
         .context("collecting all receipt information")?;
 
+    println!("\nGenerating PDF...");
     let path = full_receipt.save_pdf().context("saving receipt PDF")?;
-    println!("\nReceipt PDF saved to {:?}", path);
+    println!("Receipt PDF saved to {:?}", path);
 
     Ok(())
 }

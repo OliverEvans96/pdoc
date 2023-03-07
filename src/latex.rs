@@ -63,8 +63,6 @@ pub fn compile_latex(
             .context("adding LaTeX asset to renderer")?;
     }
 
-    println!("Generating PDF...");
-
     let pdf_data = renderer.render().context("rendering LaTeX to PDF")?;
 
     std::fs::write(pdf_output_path, pdf_data).context("writing rendered PDF to file")?;
