@@ -16,6 +16,14 @@ impl DateString {
 
         Ok(Self(s))
     }
+
+    pub fn to_beancount_owned(self) -> beancount_core::Date<'static> {
+        beancount_core::Date::from_string_unchecked(self.to_string())
+    }
+
+    pub fn to_beancount<'a>(&'a self) -> beancount_core::Date<'a> {
+        beancount_core::Date::from_str_unchecked(&self.0)
+    }
 }
 
 impl From<Date> for DateString {

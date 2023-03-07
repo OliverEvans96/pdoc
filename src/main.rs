@@ -61,8 +61,12 @@ fn generate_invoice() -> anyhow::Result<()> {
         .context("collecting all invoice information")?;
 
     println!("\nGenerating PDF...");
-    let path = full_invoice.save_pdf().context("saving invoice PDF")?;
-    println!("Invoice PDF saved to {:?}", path);
+    let pdf_path = full_invoice.save_pdf().context("saving invoice PDF")?;
+    println!("Invoice PDF saved to {:?}", pdf_path);
+    let beancount_path = full_invoice
+        .save_beancount()
+        .context("saving invoice beancount file")?;
+    println!("Invoice beancount file saved to {:?}", beancount_path);
 
     Ok(())
 }
@@ -123,6 +127,10 @@ fn get_or_create_project() -> anyhow::Result<()> {
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
 // TODO generate beancount files?
+// TODO combine `me.yaml` and `config.toml`?
+// TODO edit me.yaml at startup if invalid
+// TODO switch from `time` crate to `chrono`?
+// TODO support alternate currencies
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 

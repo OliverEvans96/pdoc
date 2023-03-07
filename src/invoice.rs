@@ -1,10 +1,14 @@
 use std::{
     fs::File,
+    io::Write,
     path::{Path, PathBuf},
 };
 
 use anyhow::Context;
 use askama::Template;
+use beancount_core::{Account, AccountType, Amount, Posting, Transaction};
+use beancount_render::{BasicRenderer, Renderer};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use time::{Date, Duration};
 
@@ -18,7 +22,9 @@ use crate::{
     me::{Me, PaymentMethod},
     price::PriceUSD,
     project::Project,
-    storage::{find_client, find_project, get_invoices_dir, get_pdfs_dir, read_me},
+    storage::{
+        find_client, find_project, get_beancount_dir, get_invoices_dir, get_pdfs_dir, read_me,
+    },
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -263,6 +269,78 @@ impl FullInvoice {
 
         Ok(path)
     }
+
+    fn write_beancount_to<W: Write>(&self, writer: &mut W) -> anyhow::Result<()> {
+        let total_cost: f32 = self
+            .invoice
+            .items
+            .iter()
+            .map(|item| item.quantity * item.unit_price.as_f32())
+            .sum();
+        // TODO: proper decimal math
+        let total_cost_str = format!("{:.2}", total_cost);
+        let total_cost_decimal = Decimal::from_str_exact(&total_cost_str)?;
+
+        let date = self.invoice.date.to_beancount();
+        let account_name: String = self
+            .client
+            .name
+            .to_string()
+            .chars()
+            .filter(|c| c.is_alphanumeric())
+            .collect();
+        let narration = format!("Invoice #{} - {}", self.invoice.number, self.project.name);
+        let src_account = Account::builder()
+            .ty(AccountType::Income)
+            .parts([account_name.into()].to_vec())
+            .build();
+        let dst_account = Account::builder()
+            .ty(AccountType::Assets)
+            .parts(["AccountsReceivable".into()].to_vec())
+            .build();
+        let amount = Amount::builder()
+            .num(total_cost_decimal)
+            .currency("USD".into())
+            .build();
+        let src_posting = Posting::builder()
+            .account(src_account)
+            .units(amount.clone().into())
+            .build();
+        let dst_posting = Posting::builder()
+            .account(dst_account)
+            .units(amount.into())
+            .build();
+        let txn = Transaction::builder()
+            .date(date)
+            .postings([src_posting, dst_posting].to_vec())
+            .narration(narration.into())
+            .build();
+
+        let renderer = BasicRenderer::new();
+
+        renderer.render(&txn, writer)?;
+
+        Ok(())
+    }
+
+    pub fn write_beancount_to_string(&self) -> anyhow::Result<String> {
+        let mut buf = Vec::<u8>::new();
+        self.write_beancount_to(&mut buf)?;
+        let string = String::from_utf8(buf)?;
+
+        Ok(string)
+    }
+
+    pub fn save_beancount(&self) -> anyhow::Result<PathBuf> {
+        let beancount_dir = get_beancount_dir().context("getting beancount directory")?;
+        let filename = format!("Invoice_{}.beancount", self.invoice.number);
+        let out_path = beancount_dir.join(&filename);
+        let mut out_file = File::create(&out_path)?;
+
+        self.write_beancount_to(&mut out_file)?;
+
+        Ok(out_path)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -296,10 +374,23 @@ impl PrefixAutocomplete for ClientAutocomplete {
 
 #[cfg(test)]
 mod test {
-    use crate::id::Id;
+    use std::{borrow::Cow, str::FromStr};
 
-    use super::Invoice;
+    use crate::{
+        address::MailingAddress,
+        client::Client,
+        contact::ContactInfo,
+        date::DateString,
+        id::Id,
+        me::{Me, PaymentMethod},
+        price::PriceUSD,
+        project::Project,
+    };
 
+    use super::{FullInvoice, Invoice, LineItem};
+
+    use beancount_core::{Account, AccountType, Amount, Directive, Ledger, Posting, Transaction};
+    use rust_decimal::{prelude::FromPrimitive, Decimal};
     use time::macros::date;
 
     #[test]
@@ -345,6 +436,117 @@ items: []
         let actual: Invoice = serde_yaml::from_str(yaml)?;
 
         assert_eq!(actual, expected);
+
+        Ok(())
+    }
+
+    fn create_full_test_invoice() -> FullInvoice {
+        FullInvoice {
+            me: Me {
+                name: "Test User".to_owned(),
+                address: MailingAddress {
+                    addr1: "123 Test Street".to_owned(),
+                    addr2: None,
+                    city: "Twin Falls".to_owned(),
+                    state: "Idaho".to_owned(),
+                    zip: "12345".to_owned(),
+                },
+                contact: ContactInfo {
+                    email: "test@example.com".to_owned(),
+                    phone: "(123) 456-7890".to_owned(),
+                },
+                payment: [PaymentMethod::Text("PayPal".to_owned())].to_vec(),
+            },
+            invoice: Invoice {
+                number: 17,
+                project_ref: "Test Project #1".to_owned().into(),
+                date: DateString::try_new("2023-01-07".to_owned()).unwrap(),
+                due_date: DateString::try_new("2023-01-21".to_owned()).unwrap(),
+                items: [
+                    LineItem {
+                        description: "Test the first thing".to_owned(),
+                        quantity: 1.0,
+                        unit_price: PriceUSD::from_str("10.3").unwrap(),
+                    },
+                    LineItem {
+                        description: "Test the second thing".to_owned(),
+                        quantity: 2.0,
+                        unit_price: PriceUSD::from_str("9.6").unwrap(),
+                    },
+                ]
+                .to_vec(),
+            },
+            project: Project {
+                name: "Test Project #1".to_owned().into(),
+                description: "A great project for testing".to_owned(),
+                client_ref: "Test Client #1".to_owned().into(),
+            },
+            client: Client {
+                name: "Test Client #1".to_owned().into(),
+                address: MailingAddress {
+                    addr1: "124 Test Avenue".to_owned(),
+                    addr2: None,
+                    city: "New York".to_owned(),
+                    state: "New York".to_owned(),
+                    zip: "54321".to_owned(),
+                },
+                contact: ContactInfo {
+                    email: "client@example.com".to_owned(),
+                    phone: "(321) 654-0987".to_owned(),
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn test_write_beancount() -> anyhow::Result<()> {
+        let full_invoice = create_full_test_invoice();
+
+        let beancount_string = full_invoice.write_beancount_to_string()?;
+
+        let ledger = beancount_parser::parse(&beancount_string)?;
+
+        let date = beancount_core::Date::from_str_unchecked("2023-01-07");
+        let src_account = Account::builder()
+            .ty(AccountType::Income)
+            .parts([Cow::Borrowed("TestClient1")].to_vec())
+            .build();
+        let dst_account = Account::builder()
+            .ty(AccountType::Assets)
+            .parts([Cow::Borrowed("AccountsReceivable")].to_vec())
+            .build();
+        let amount = Amount::builder()
+            .num(Decimal::from_str_exact("29.50").unwrap())
+            .currency("USD".into())
+            .build();
+        let src_posting = Posting::builder()
+            .account(src_account)
+            .units(amount.clone().into())
+            .build();
+        let dst_posting = Posting::builder()
+            .account(dst_account)
+            .units(amount.into())
+            .build();
+        let txn = Transaction::builder()
+            .date(date)
+            .postings([src_posting, dst_posting].to_vec())
+            .narration("Invoice #17 - Test Project #1".into())
+            .source(Some(
+                r#"2023-01-07 * "Invoice #17 - Test Project #1"
+	Income:TestClient1	29.50 USD
+	Assets:AccountsReceivable	29.50 USD
+"#,
+            ))
+            .build();
+
+        let directive = Directive::Transaction(txn);
+        let expected_ledger = Ledger::builder().directives([directive].to_vec()).build();
+
+        println!("Expected: {:#?}", expected_ledger);
+        println!("Actual: {:#?}", ledger);
+        println!();
+
+        assert_eq!(expected_ledger, ledger);
 
         Ok(())
     }
