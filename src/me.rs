@@ -161,8 +161,9 @@ impl Me {
             me.save().context("saving personal info")?
         } else {
             if let Err(err) = Me::load() {
-                eprintln!("Error parsing personal info: {:#?}", err);
-                eprintln!("Please correct the issue before continuing.");
+                eprintln!("Error parsing personal info: {:?}", err);
+                eprintln!("\nPlease correct the issue before continuing.");
+                std::process::exit(1);
             }
         }
 
