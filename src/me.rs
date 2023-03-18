@@ -14,38 +14,55 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PaymentMethod {
-    Text(String),
-    Link { text: String, url: String },
+pub struct PaymentMethod {
+    pub name: String,
+    pub display_text: Option<String>,
+    pub url: Option<String>,
 }
 
 impl PaymentMethod {
     pub fn create_from_user_input() -> anyhow::Result<Option<Self>> {
-        let maybe_description = inquire::Text::new("Payment method:")
+        let maybe_name = inquire::Text::new("Payment method:")
             .prompt_skippable()
             .context("reading payment method from user input")?
             // Convert Some("") to None
             .filter(|line| !line.is_empty());
 
-        if let Some(description) = maybe_description {
-            let maybe_url = inquire::Text::new("Add link URL?")
+        if let Some(name) = maybe_name {
+            let display_text = inquire::Text::new("Alternate display text?")
+                .prompt_skippable()
+                .context("reading display text from user input")?
+                // Convert Some("") to None
+                .filter(|line| !line.is_empty());
+
+            let url = inquire::Text::new("Add link URL?")
                 .prompt_skippable()
                 .context("reading link URL from user input")?
                 // Convert Some("") to None
                 .filter(|line| !line.is_empty());
 
-            let method = if let Some(url) = maybe_url {
-                PaymentMethod::Link {
-                    text: description,
-                    url,
-                }
-            } else {
-                PaymentMethod::Text(description)
+            let method = PaymentMethod {
+                name,
+                display_text,
+                url,
             };
 
             Ok(Some(method))
         } else {
             Ok(None)
+        }
+    }
+
+    pub fn to_latex(&self) -> String {
+        let display_text = self
+            .display_text
+            .clone()
+            .unwrap_or_else(|| self.name.clone());
+
+        if let Some(url) = &self.url {
+            format!("\\href{{{}}}{{{}}}", display_text, url)
+        } else {
+            display_text
         }
     }
 }
@@ -168,5 +185,68 @@ impl Me {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    use super::PaymentMethod;
+
+    #[test]
+    fn test_payment_method_to_latex_1() {
+        let method = PaymentMethod {
+            name: "PayPal".to_owned(),
+            display_text: Some("PayPal (@MyHandle)".to_owned()),
+            url: Some("https://example.com".to_owned()),
+        };
+
+        let latex = method.to_latex();
+        let expected = r#"\href{PayPal (@MyHandle)}{https://example.com}"#;
+
+        assert_eq!(latex, expected);
+    }
+
+    #[test]
+    fn test_payment_method_to_latex_2() {
+        let method = PaymentMethod {
+            name: "PayPal".to_owned(),
+            display_text: Some("PayPal (@MyHandle)".to_owned()),
+            url: None,
+        };
+
+        let latex = method.to_latex();
+        let expected = r#"PayPal (@MyHandle)"#;
+
+        assert_eq!(latex, expected);
+    }
+
+    #[test]
+    fn test_payment_method_to_latex_3() {
+        let method = PaymentMethod {
+            name: "PayPal".to_owned(),
+            display_text: None,
+            url: Some("https://example.com".to_owned()),
+        };
+
+        let latex = method.to_latex();
+        let expected = r#"\href{PayPal}{https://example.com}"#;
+
+        assert_eq!(latex, expected);
+    }
+
+    #[test]
+    fn test_payment_method_to_latex_4() {
+        let method = PaymentMethod {
+            name: "PayPal".to_owned(),
+            display_text: None,
+            url: None,
+        };
+
+        let latex = method.to_latex();
+        let expected = r#"PayPal"#;
+
+        assert_eq!(latex, expected);
     }
 }

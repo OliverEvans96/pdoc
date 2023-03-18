@@ -15,7 +15,7 @@ use crate::{
     date::DateString,
     invoice::Invoice,
     latex::{compile_latex, Asset, Latex},
-    me::{Me, PaymentMethod},
+    me::Me,
     project::Project,
     storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir, read_me},
 };
@@ -143,10 +143,7 @@ impl Receipt {
         let payment_options = me
             .payment
             .into_iter()
-            .map(|method| match method {
-                PaymentMethod::Text(text) => text,
-                PaymentMethod::Link { text, .. } => text,
-            })
+            .map(|method| method.name)
             .map(|text| SelectOption {
                 value: text.clone(),
                 description: text,

@@ -17,9 +17,10 @@ use crate::{
     client::Client,
     completion::PrefixAutocomplete,
     date::DateString,
+    filters,
     id::Id,
     latex::{compile_latex, Asset, Latex},
-    me::{Me, PaymentMethod},
+    me::Me,
     price::PriceUSD,
     project::Project,
     storage::{
@@ -390,7 +391,7 @@ mod test {
     use super::{FullInvoice, Invoice, LineItem};
 
     use beancount_core::{Account, AccountType, Amount, Directive, Ledger, Posting, Transaction};
-    use rust_decimal::{prelude::FromPrimitive, Decimal};
+    use rust_decimal::Decimal;
     use time::macros::date;
 
     #[test]
@@ -455,7 +456,12 @@ items: []
                     email: "test@example.com".to_owned(),
                     phone: "(123) 456-7890".to_owned(),
                 },
-                payment: [PaymentMethod::Text("PayPal".to_owned())].to_vec(),
+                payment: [PaymentMethod {
+                    name: "PayPal".to_owned(),
+                    display_text: None,
+                    url: None,
+                }]
+                .to_vec(),
             },
             invoice: Invoice {
                 number: 17,

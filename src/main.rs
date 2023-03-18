@@ -12,6 +12,7 @@ mod completion;
 mod config;
 mod contact;
 mod date;
+mod filters;
 mod id;
 mod invoice;
 mod latex;
