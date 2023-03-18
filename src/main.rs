@@ -146,7 +146,6 @@ fn get_or_create_project(config: &Config) -> anyhow::Result<()> {
 
 // TODO re-render PDFs from yaml?
 // TODO finalize CLI
-// TODO combine `me.yaml` and `config.toml`?
 // TODO beancount config in config.toml
 //      - enable/disable
 //      - AccountsReceivable name
