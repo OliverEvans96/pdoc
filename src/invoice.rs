@@ -18,7 +18,6 @@ use crate::{
     completion::PrefixAutocomplete,
     config::Config,
     date::DateString,
-    filters,
     id::Id,
     latex::{compile_latex, Asset, Latex},
     me::Me,

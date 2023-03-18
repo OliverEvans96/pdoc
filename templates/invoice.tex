@@ -186,7 +186,12 @@
 	\textbf{Payment}
 
 {% for method in me.payment %}
-  {{ method|payment_to_latex }}
+  {% match method.url %}
+	{% when Some with (url) %}
+	\href{ {{- url -}} }{ {{- method -}} }
+	{% when None %}
+	{{ method }}
+  {% endmatch %}
 {% endfor %}
 \end{minipage}
 

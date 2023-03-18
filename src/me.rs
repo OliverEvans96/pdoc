@@ -50,16 +50,6 @@ impl PaymentMethod {
             Ok(None)
         }
     }
-
-    pub fn to_latex(&self) -> String {
-        let display_text = self.to_string();
-
-        if let Some(url) = &self.url {
-            format!("\\href{{{}}}{{{}}}", display_text, url)
-        } else {
-            display_text
-        }
-    }
 }
 
 impl Display for PaymentMethod {
@@ -174,67 +164,4 @@ impl Me {
 
     //     Ok(())
     // }
-}
-
-#[cfg(test)]
-mod tests {
-    use pretty_assertions::assert_eq;
-
-    use super::PaymentMethod;
-
-    #[test]
-    fn test_payment_method_to_latex_1() {
-        let method = PaymentMethod {
-            name: "PayPal".to_owned(),
-            display_text: Some("PayPal (@MyHandle)".to_owned()),
-            url: Some("https://example.com".to_owned()),
-        };
-
-        let latex = method.to_latex();
-        let expected = r#"\href{PayPal (@MyHandle)}{https://example.com}"#;
-
-        assert_eq!(latex, expected);
-    }
-
-    #[test]
-    fn test_payment_method_to_latex_2() {
-        let method = PaymentMethod {
-            name: "PayPal".to_owned(),
-            display_text: Some("PayPal (@MyHandle)".to_owned()),
-            url: None,
-        };
-
-        let latex = method.to_latex();
-        let expected = r#"PayPal (@MyHandle)"#;
-
-        assert_eq!(latex, expected);
-    }
-
-    #[test]
-    fn test_payment_method_to_latex_3() {
-        let method = PaymentMethod {
-            name: "PayPal".to_owned(),
-            display_text: None,
-            url: Some("https://example.com".to_owned()),
-        };
-
-        let latex = method.to_latex();
-        let expected = r#"\href{PayPal}{https://example.com}"#;
-
-        assert_eq!(latex, expected);
-    }
-
-    #[test]
-    fn test_payment_method_to_latex_4() {
-        let method = PaymentMethod {
-            name: "PayPal".to_owned(),
-            display_text: None,
-            url: None,
-        };
-
-        let latex = method.to_latex();
-        let expected = r#"PayPal"#;
-
-        assert_eq!(latex, expected);
-    }
 }
