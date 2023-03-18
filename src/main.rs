@@ -30,9 +30,17 @@ enum Command {
     /// List all saved clients.
     ListClients,
     /// Generate an invoice.
-    Invoice,
+    Invoice {
+        /// Print latex source before rendering
+        #[arg(long)]
+        show_tex: bool,
+    },
     /// Generate a receipt.
-    Receipt,
+    Receipt {
+        /// Print latex source before rendering
+        #[arg(long)]
+        show_tex: bool,
+    },
     /// Get or create project.
     Project,
     // Edit personal info.
@@ -54,7 +62,7 @@ fn get_or_create_client(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn generate_invoice(config: &Config) -> anyhow::Result<()> {
+fn generate_invoice(config: &Config, show_tex: bool) -> anyhow::Result<()> {
     let invoice =
         Invoice::create_from_user_input(config).context("creating invoice from user input")?;
     invoice.save(config).context("saving invoice yaml")?;
@@ -65,9 +73,10 @@ fn generate_invoice(config: &Config) -> anyhow::Result<()> {
 
     println!("\nGenerating PDF...");
     let pdf_path = full_invoice
-        .save_pdf(config)
+        .save_pdf(config, show_tex)
         .context("saving invoice PDF")?;
     println!("Invoice PDF saved to {:?}", pdf_path);
+
     let beancount_path = full_invoice
         .save_beancount(config)
         .context("saving invoice beancount file")?;
@@ -76,7 +85,7 @@ fn generate_invoice(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn generate_receipt(config: &Config) -> anyhow::Result<()> {
+fn generate_receipt(config: &Config, show_tex: bool) -> anyhow::Result<()> {
     let receipt =
         Receipt::create_from_user_input(config).context("creating receipt from user input")?;
     receipt.save(config).context("saving receipt")?;
@@ -87,7 +96,7 @@ fn generate_receipt(config: &Config) -> anyhow::Result<()> {
 
     println!("\nGenerating PDF...");
     let path = full_receipt
-        .save_pdf(config)
+        .save_pdf(config, show_tex)
         .context("saving receipt PDF")?;
     println!("Receipt PDF saved to {:?}", path);
 
@@ -151,7 +160,6 @@ fn get_or_create_project(config: &Config) -> anyhow::Result<()> {
 // TODO more `inquire` help texts (especially indicate which prompts are skippable)
 // TODO beancount decimal math
 // TODO beancount for receipts
-// TODO verbose latex mode (show .tex source)
 // TODO master beancount file that imports all others?
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
@@ -165,8 +173,8 @@ fn main() -> anyhow::Result<()> {
     match opts.command {
         Command::Client => get_or_create_client(&config)?,
         Command::ListClients => list_clients(&config)?,
-        Command::Invoice => generate_invoice(&config)?,
-        Command::Receipt => generate_receipt(&config)?,
+        Command::Invoice { show_tex } => generate_invoice(&config, show_tex)?,
+        Command::Receipt { show_tex } => generate_receipt(&config, show_tex)?,
         Command::Project => get_or_create_project(&config)?,
         // Command::Me => edit_personal_info(&config)?,
     }

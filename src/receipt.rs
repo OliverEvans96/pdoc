@@ -214,8 +214,16 @@ impl FullReceipt {
         format!("Receipt_{}_{}.pdf", name_no_whitespace, self.invoice.number)
     }
 
-    pub fn render_pdf(&self, pdf_output_path: impl AsRef<Path>) -> anyhow::Result<()> {
+    pub fn render_pdf(
+        &self,
+        pdf_output_path: impl AsRef<Path>,
+        show_tex: bool,
+    ) -> anyhow::Result<()> {
         let rendered_tex = Template::render(self).context("rendering receipt template")?;
+
+        if show_tex {
+            println!("Final LaTeX:\n\n{}", &rendered_tex);
+        }
 
         let invoice_class = Asset {
             data: include_bytes!("../assets/CSMinimalInvoice.cls").to_vec(),
@@ -228,11 +236,12 @@ impl FullReceipt {
         Ok(())
     }
 
-    pub fn save_pdf(&self, config: &Config) -> anyhow::Result<PathBuf> {
+    pub fn save_pdf(&self, config: &Config, show_tex: bool) -> anyhow::Result<PathBuf> {
         let pdfs_dir = get_pdfs_dir(config).context("getting receipts directory")?;
         let path = pdfs_dir.join(self.filename());
 
-        self.render_pdf(&path).context("generating receipt PDF")?;
+        self.render_pdf(&path, show_tex)
+            .context("generating receipt PDF")?;
 
         Ok(path)
     }
