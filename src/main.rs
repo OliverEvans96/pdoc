@@ -1,9 +1,10 @@
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use cli::print_title;
+use config::Config;
 use project::Project;
 
-use crate::{cli::print_header, client::Client, invoice::Invoice, me::Me, receipt::Receipt};
+use crate::{client::Client, invoice::Invoice, receipt::Receipt};
 
 mod address;
 mod cli;
@@ -34,8 +35,8 @@ enum Command {
     Receipt,
     /// Get or create project.
     Project,
-    /// Edit personal info.
-    Me,
+    // Edit personal info.
+    // Me,
 }
 
 #[derive(Parser)]
@@ -44,8 +45,8 @@ struct Opts {
     command: Command,
 }
 
-fn get_or_create_client() -> anyhow::Result<()> {
-    let client = Client::get_or_create_from_user_input()
+fn get_or_create_client(config: &Config) -> anyhow::Result<()> {
+    let client = Client::get_or_create_from_user_input(config)
         .context("getting or creating client from user input")?;
 
     println!("got client: {:#?}", client);
@@ -53,61 +54,71 @@ fn get_or_create_client() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn generate_invoice() -> anyhow::Result<()> {
-    let invoice = Invoice::create_from_user_input().context("creating invoice from user input")?;
-    invoice.save().context("saving invoice yaml")?;
+fn generate_invoice(config: &Config) -> anyhow::Result<()> {
+    let invoice =
+        Invoice::create_from_user_input(config).context("creating invoice from user input")?;
+    invoice.save(config).context("saving invoice yaml")?;
 
     let full_invoice = invoice
-        .collect()
+        .collect(config)
         .context("collecting all invoice information")?;
 
     println!("\nGenerating PDF...");
-    let pdf_path = full_invoice.save_pdf().context("saving invoice PDF")?;
+    let pdf_path = full_invoice
+        .save_pdf(config)
+        .context("saving invoice PDF")?;
     println!("Invoice PDF saved to {:?}", pdf_path);
     let beancount_path = full_invoice
-        .save_beancount()
+        .save_beancount(config)
         .context("saving invoice beancount file")?;
     println!("Invoice beancount file saved to {:?}", beancount_path);
 
     Ok(())
 }
 
-fn generate_receipt() -> anyhow::Result<()> {
-    let receipt = Receipt::create_from_user_input().context("creating receipt from user input")?;
-    receipt.save().context("saving receipt")?;
+fn generate_receipt(config: &Config) -> anyhow::Result<()> {
+    let receipt =
+        Receipt::create_from_user_input(config).context("creating receipt from user input")?;
+    receipt.save(config).context("saving receipt")?;
 
     let full_receipt = receipt
-        .collect()
+        .collect(config)
         .context("collecting all receipt information")?;
 
     println!("\nGenerating PDF...");
-    let path = full_receipt.save_pdf().context("saving receipt PDF")?;
+    let path = full_receipt
+        .save_pdf(config)
+        .context("saving receipt PDF")?;
     println!("Receipt PDF saved to {:?}", path);
 
     Ok(())
 }
 
-fn edit_personal_info() -> anyhow::Result<()> {
-    print_header("Edit personal info");
+// TODO: re-enable editing personal info from CLI
+// fn edit_personal_info(config: &Config) -> anyhow::Result<()> {
+//     print_header("Edit personal info");
 
-    if let Ok(me) = Me::load() {
-        let edited_me = me.edit_yaml().context("editing personal info yaml")?;
-        edited_me
-            .save()
-            .context("saving edited personal info yaml")?;
-    } else {
-        let me =
-            Me::create_from_user_input().context("creating personal info data from user input")?;
-        me.save().context("saving personal info yaml")?;
-    }
+//     if let Ok(me) = Me::load(config) {
+//         let edited_me = config
+//             .me
+//             .edit_yaml()
+//             .context("editing personal info yaml")?;
+//         edited_me
+//             .save(config)
+//             .context("saving edited personal info yaml")?;
+//     } else {
+//         let me =
+//             Me::create_from_user_input().context("creating personal info data from user input")?;
+//         me.save(config).context("saving personal info yaml")?;
+//     }
 
-    println!("\nPersonal info saved!");
+//     println!("\nPersonal info saved!");
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-fn list_clients() -> anyhow::Result<()> {
-    let client_names = Client::list().context("listing clients")?;
+fn list_clients(config: &Config) -> anyhow::Result<()> {
+    let client_names = Client::list(config).context("listing clients")?;
 
     for name in client_names {
         println!("- {}", name)
@@ -116,8 +127,8 @@ fn list_clients() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn get_or_create_project() -> anyhow::Result<()> {
-    let project = Project::get_or_create_from_user_input()
+fn get_or_create_project(config: &Config) -> anyhow::Result<()> {
+    let project = Project::get_or_create_from_user_input(config)
         .context("getting or creating project from user input")?;
 
     println!("project: {:#?}", project);
@@ -146,15 +157,17 @@ fn main() -> anyhow::Result<()> {
 
     print_title("pdoc");
 
-    Me::create_if_necessary()?;
+    // Me::create_if_necessary()?;
+
+    let config = Config::load()?;
 
     match opts.command {
-        Command::Client => get_or_create_client()?,
-        Command::ListClients => list_clients()?,
-        Command::Invoice => generate_invoice()?,
-        Command::Receipt => generate_receipt()?,
-        Command::Project => get_or_create_project()?,
-        Command::Me => edit_personal_info()?,
+        Command::Client => get_or_create_client(&config)?,
+        Command::ListClients => list_clients(&config)?,
+        Command::Invoice => generate_invoice(&config)?,
+        Command::Receipt => generate_receipt(&config)?,
+        Command::Project => get_or_create_project(&config)?,
+        // Command::Me => edit_personal_info(&config)?,
     }
 
     Ok(())

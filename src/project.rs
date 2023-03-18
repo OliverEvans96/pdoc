@@ -6,6 +6,7 @@ use crate::{
     cli::{print_header, YamlValidator},
     client::Client,
     completion::{LocalAutocompleter, PrefixAutocomplete},
+    config::Config,
     id::Id,
     storage::get_projects_dir,
 };
@@ -39,10 +40,10 @@ impl Project {
         Ok(parsed)
     }
 
-    pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
+    pub fn get_or_create_from_user_input(config: &Config) -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let project_names = Project::list()?;
+        let project_names = Project::list(config)?;
         let autocomplete = LocalAutocompleter::new(ProjectAutocomplete::new(project_names.clone()));
 
         let project_name: Id = inquire::Text::new("Project Name:")
@@ -52,14 +53,14 @@ impl Project {
             .into();
 
         if !project_names.contains(&project_name) {
-            let project = Project::create_from_user_input_with_name(project_name.clone())?;
-            project.save()?;
+            let project = Project::create_from_user_input_with_name(project_name.clone(), config)?;
+            project.save(config)?;
         };
 
         Ok(project_name)
     }
 
-    pub fn create_from_user_input_with_name(name: Id) -> anyhow::Result<Self> {
+    pub fn create_from_user_input_with_name(name: Id, config: &Config) -> anyhow::Result<Self> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
         let description = inquire::Text::new("Project Description:")
@@ -67,7 +68,7 @@ impl Project {
             .with_validator(required_validator.clone())
             .prompt()?;
 
-        let client_name = Client::get_or_create_from_user_input()?;
+        let client_name = Client::get_or_create_from_user_input(config)?;
 
         let mut project = Self {
             name,
@@ -84,8 +85,8 @@ impl Project {
         self.name.to_filename()
     }
 
-    pub fn save(&self) -> anyhow::Result<()> {
-        let projects_dir = get_projects_dir()?;
+    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
+        let projects_dir = get_projects_dir(config)?;
         let path = projects_dir.join(self.filename());
         let file = File::create(path)?;
 
@@ -94,8 +95,8 @@ impl Project {
         Ok(())
     }
 
-    pub fn list() -> anyhow::Result<Vec<Id>> {
-        let projects_dir = get_projects_dir()?;
+    pub fn list(config: &Config) -> anyhow::Result<Vec<Id>> {
+        let projects_dir = get_projects_dir(config)?;
 
         let project_names = projects_dir
             .read_dir()?

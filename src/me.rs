@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, path::Path};
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -9,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     address::MailingAddress,
     cli::{print_header, YamlValidator},
+    config::Config,
     contact::ContactInfo,
     storage::get_data_dir,
 };
@@ -134,8 +132,8 @@ impl Me {
         Ok(me)
     }
 
-    pub fn save(&self) -> anyhow::Result<()> {
-        let data_dir = get_data_dir().context("getting data directory")?;
+    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
+        let data_dir = get_data_dir(config).context("getting data directory")?;
         std::fs::create_dir_all(&data_dir).context("creating data directory")?;
         let path = data_dir.join("me.yaml");
         let file = File::create(path).context("opening personal info yaml file")?;
@@ -152,40 +150,26 @@ impl Me {
         Ok(me)
     }
 
-    pub fn path() -> anyhow::Result<PathBuf> {
-        let data_dir = get_data_dir().context("getting data directory")?;
-        let filename = "me.yaml";
-        let path = data_dir.join(filename);
+    // TODO: re-enable editing personal info from CLI
+    // pub fn create_if_necessary() -> anyhow::Result<()> {
+    //     let file_exists = !Me::path()
+    //         .context("getting personal info yaml path")?
+    //         .exists();
 
-        Ok(path)
-    }
+    //     if file_exists {
+    //         println!("Welcome to pdoc! Enter your personal info to begin.");
+    //         let me = Me::create_from_user_input().context("creating personal info")?;
+    //         me.save().context("saving personal info")?
+    //     } else {
+    //         if let Err(err) = Me::load() {
+    //             eprintln!("Error parsing personal info: {:?}", err);
+    //             eprintln!("\nPlease correct the issue before continuing.");
+    //             std::process::exit(1);
+    //         }
+    //     }
 
-    pub fn load() -> anyhow::Result<Self> {
-        let path = Me::path()?;
-        let me = Me::load_from_path(path).context("loading personal info from file")?;
-
-        Ok(me)
-    }
-
-    pub fn create_if_necessary() -> anyhow::Result<()> {
-        let file_exists = !Me::path()
-            .context("getting personal info yaml path")?
-            .exists();
-
-        if file_exists {
-            println!("Welcome to pdoc! Enter your personal info to begin.");
-            let me = Me::create_from_user_input().context("creating personal info")?;
-            me.save().context("saving personal info")?
-        } else {
-            if let Err(err) = Me::load() {
-                eprintln!("Error parsing personal info: {:?}", err);
-                eprintln!("\nPlease correct the issue before continuing.");
-                std::process::exit(1);
-            }
-        }
-
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
 
 #[cfg(test)]

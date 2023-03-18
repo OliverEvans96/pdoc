@@ -16,6 +16,7 @@ use crate::{
     cli::{print_header, NumberValidator, YamlValidator},
     client::Client,
     completion::PrefixAutocomplete,
+    config::Config,
     date::DateString,
     filters,
     id::Id,
@@ -23,9 +24,7 @@ use crate::{
     me::Me,
     price::PriceUSD,
     project::Project,
-    storage::{
-        find_client, find_project, get_beancount_dir, get_invoices_dir, get_pdfs_dir, read_me,
-    },
+    storage::{find_client, find_project, get_beancount_dir, get_invoices_dir, get_pdfs_dir},
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -76,8 +75,8 @@ pub struct Invoice {
 }
 
 impl Invoice {
-    pub fn list() -> anyhow::Result<Vec<u32>> {
-        let invoices_dir = get_invoices_dir().context("getting invoices directory")?;
+    pub fn list(config: &Config) -> anyhow::Result<Vec<u32>> {
+        let invoices_dir = get_invoices_dir(config).context("getting invoices directory")?;
 
         let invoice_numbers: Vec<u32> = invoices_dir
             .read_dir()
@@ -102,8 +101,8 @@ impl Invoice {
         Ok(invoice)
     }
 
-    pub fn load(number: u32) -> anyhow::Result<Self> {
-        let invoices_dir = get_invoices_dir().context("getting invoices directory")?;
+    pub fn load(number: u32, config: &Config) -> anyhow::Result<Self> {
+        let invoices_dir = get_invoices_dir(config).context("getting invoices directory")?;
         let filename = format!("{}.yaml", number);
         let path = invoices_dir.join(filename);
         let invoice = Invoice::load_from_path(path).context("loading invoice from file")?;
@@ -111,8 +110,8 @@ impl Invoice {
         Ok(invoice)
     }
 
-    pub fn get_next_number() -> anyhow::Result<u32> {
-        let existing_numbers = Self::list().context("listing invoices")?;
+    pub fn get_next_number(config: &Config) -> anyhow::Result<u32> {
+        let existing_numbers = Self::list(config).context("listing invoices")?;
         let max = existing_numbers.iter().fold(0, |acc, &el| acc.max(el));
         let next = max + 1;
 
@@ -139,11 +138,11 @@ impl Invoice {
         Ok(parsed)
     }
 
-    pub fn create_from_user_input() -> anyhow::Result<Self> {
+    pub fn create_from_user_input(config: &Config) -> anyhow::Result<Self> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
         let number_validator = NumberValidator::new();
 
-        let next_number = Self::get_next_number().context("getting next invoice number")?;
+        let next_number = Self::get_next_number(config).context("getting next invoice number")?;
 
         let invoice_number: u32 = inquire::Text::new("Invoice number:")
             .with_initial_value(&next_number.to_string())
@@ -158,8 +157,8 @@ impl Invoice {
 
         print_header(&format!("Create invoice {}", invoice_number));
 
-        let project_name =
-            Project::get_or_create_from_user_input().context("getting or creating project")?;
+        let project_name = Project::get_or_create_from_user_input(config)
+            .context("getting or creating project")?;
 
         let chrono_date = inquire::DateSelect::new("Invoice date:")
             .prompt()
@@ -206,8 +205,8 @@ impl Invoice {
         format!("{}.yaml", self.number)
     }
 
-    pub fn save(&self) -> anyhow::Result<()> {
-        let projects_dir = get_invoices_dir().context("getting invoices directory")?;
+    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
+        let projects_dir = get_invoices_dir(config).context("getting invoices directory")?;
         let path = projects_dir.join(self.filename());
         let file = File::create(path).context("opening invoice output file")?;
 
@@ -216,13 +215,12 @@ impl Invoice {
         Ok(())
     }
 
-    pub fn collect(self) -> anyhow::Result<FullInvoice> {
-        let me = read_me().context("reading personal info")?;
-        let project = find_project(&self.project_ref).context("finding project")?;
-        let client = find_client(&project.client_ref).context("finding client")?;
+    pub fn collect(self, config: &Config) -> anyhow::Result<FullInvoice> {
+        let project = find_project(&self.project_ref, config).context("finding project")?;
+        let client = find_client(&project.client_ref, config).context("finding client")?;
 
         let full_invoice = FullInvoice {
-            me,
+            me: config.me.clone(),
             invoice: self,
             project,
             client,
@@ -262,8 +260,8 @@ impl FullInvoice {
         Ok(())
     }
 
-    pub fn save_pdf(&self) -> anyhow::Result<PathBuf> {
-        let pdfs_dir = get_pdfs_dir().context("getting PDF directory")?;
+    pub fn save_pdf(&self, config: &Config) -> anyhow::Result<PathBuf> {
+        let pdfs_dir = get_pdfs_dir(config).context("getting PDF directory")?;
         let path = pdfs_dir.join(self.filename());
 
         self.render_pdf(&path).context("generating invoice PDF")?;
@@ -332,8 +330,8 @@ impl FullInvoice {
         Ok(string)
     }
 
-    pub fn save_beancount(&self) -> anyhow::Result<PathBuf> {
-        let beancount_dir = get_beancount_dir().context("getting beancount directory")?;
+    pub fn save_beancount(&self, config: &Config) -> anyhow::Result<PathBuf> {
+        let beancount_dir = get_beancount_dir(config).context("getting beancount directory")?;
         let filename = format!("Invoice_{}.beancount", self.invoice.number);
         let out_path = beancount_dir.join(&filename);
         let mut out_file = File::create(&out_path)?;

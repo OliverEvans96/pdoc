@@ -12,12 +12,13 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cli::{print_header, YamlValidator},
     client::Client,
+    config::Config,
     date::DateString,
     invoice::Invoice,
     latex::{compile_latex, Asset, Latex},
     me::Me,
     project::Project,
-    storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir, read_me},
+    storage::{find_client, find_invoice, find_project, get_pdfs_dir, get_receipts_dir},
 };
 
 struct SelectOption<T> {
@@ -40,8 +41,8 @@ pub struct Receipt {
 }
 
 impl Receipt {
-    pub fn list() -> anyhow::Result<Vec<u32>> {
-        let receipts_dir = get_receipts_dir().context("getting receipts directory")?;
+    pub fn list(config: &Config) -> anyhow::Result<Vec<u32>> {
+        let receipts_dir = get_receipts_dir(config).context("getting receipts directory")?;
 
         let receipt_numbers: Vec<u32> = receipts_dir
             .read_dir()
@@ -80,14 +81,12 @@ impl Receipt {
         Ok(parsed)
     }
 
-    pub fn create_from_user_input() -> anyhow::Result<Self> {
-        let me = Me::load().context("loading personal info")?;
-
-        let invoice_nums = Invoice::list()
+    pub fn create_from_user_input(config: &Config) -> anyhow::Result<Self> {
+        let invoice_nums = Invoice::list(config)
             .context("listing invoices")?
             .into_iter()
             .collect::<HashSet<_>>();
-        let receipt_nums = Receipt::list()
+        let receipt_nums = Receipt::list(config)
             .context("listing receipts")?
             .into_iter()
             .collect::<HashSet<_>>();
@@ -106,7 +105,7 @@ impl Receipt {
             // // could not be read sucessfully.
             // .filter_map(Result::ok)
             .filter_map(|number| {
-                let inv = Invoice::load(number).ok()?;
+                let inv = Invoice::load(number, config).ok()?;
                 let description = format!(
                     "#{} on {} (due {}) for {}",
                     inv.number, inv.date, inv.due_date, inv.project_ref
@@ -140,10 +139,11 @@ impl Receipt {
         let date_string = DateString::try_new(chrono_date.to_string())
             .context("parsing invoice DateString from user input")?;
 
-        let payment_options = me
+        let payment_options = config
+            .me
             .payment
-            .into_iter()
-            .map(|method| method.name)
+            .iter()
+            .map(|method| method.name.clone())
             .map(|text| SelectOption {
                 value: text.clone(),
                 description: text,
@@ -170,8 +170,8 @@ impl Receipt {
         format!("{}.yaml", self.invoice_num)
     }
 
-    pub fn save(&self) -> anyhow::Result<()> {
-        let projects_dir = get_receipts_dir().context("getting receipts directory")?;
+    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
+        let projects_dir = get_receipts_dir(config).context("getting receipts directory")?;
         let path = projects_dir.join(self.filename());
         let file = File::create(path).context("creating receipt yaml file")?;
 
@@ -180,14 +180,13 @@ impl Receipt {
         Ok(())
     }
 
-    pub fn collect(self) -> anyhow::Result<FullReceipt> {
-        let me = read_me().context("reading personal info")?;
-        let invoice = find_invoice(self.invoice_num).context("finding invoice")?;
-        let project = find_project(&invoice.project_ref).context("finding project")?;
-        let client = find_client(&project.client_ref).context("finding client")?;
+    pub fn collect(self, config: &Config) -> anyhow::Result<FullReceipt> {
+        let invoice = find_invoice(self.invoice_num, config).context("finding invoice")?;
+        let project = find_project(&invoice.project_ref, config).context("finding project")?;
+        let client = find_client(&project.client_ref, config).context("finding client")?;
 
         let full_receipt = FullReceipt {
-            me,
+            me: config.me.clone(),
             receipt: self,
             invoice,
             project,
@@ -229,8 +228,8 @@ impl FullReceipt {
         Ok(())
     }
 
-    pub fn save_pdf(&self) -> anyhow::Result<PathBuf> {
-        let pdfs_dir = get_pdfs_dir().context("getting receipts directory")?;
+    pub fn save_pdf(&self, config: &Config) -> anyhow::Result<PathBuf> {
+        let pdfs_dir = get_pdfs_dir(config).context("getting receipts directory")?;
         let path = pdfs_dir.join(self.filename());
 
         self.render_pdf(&path).context("generating receipt PDF")?;

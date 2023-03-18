@@ -7,6 +7,7 @@ use crate::{
     address::MailingAddress,
     cli::{print_header, YamlValidator},
     completion::{LocalAutocompleter, PrefixAutocomplete},
+    config::Config,
     contact::ContactInfo,
     id::Id,
     storage::get_clients_dir,
@@ -42,10 +43,10 @@ impl Client {
         Ok(parsed)
     }
 
-    pub fn get_or_create_from_user_input() -> anyhow::Result<Id> {
+    pub fn get_or_create_from_user_input(config: &Config) -> anyhow::Result<Id> {
         let required_validator = inquire::validator::ValueRequiredValidator::default();
 
-        let client_names = Client::list().context("listing clients")?;
+        let client_names = Client::list(config).context("listing clients")?;
         let autocomplete = LocalAutocompleter::new(ClientAutocomplete::new(client_names.clone()));
 
         let name: Id = inquire::Text::new("Client Name:")
@@ -58,7 +59,7 @@ impl Client {
         if !client_names.contains(&name) {
             let client = Client::create_from_user_input_with_name(name.clone())
                 .context("creating client from user input")?;
-            client.save().context("saving client yaml file")?;
+            client.save(config).context("saving client yaml file")?;
         };
 
         Ok(name)
@@ -88,8 +89,8 @@ impl Client {
         self.name.to_filename()
     }
 
-    pub fn save(&self) -> anyhow::Result<()> {
-        let clients_dir = get_clients_dir().context("getting clients directory")?;
+    pub fn save(&self, config: &Config) -> anyhow::Result<()> {
+        let clients_dir = get_clients_dir(config).context("getting clients directory")?;
         let path = clients_dir.join(self.filename());
         let file = File::create(path).context("creating client yaml file")?;
 
@@ -105,8 +106,8 @@ impl Client {
         Ok(client)
     }
 
-    pub fn load(name: Id) -> anyhow::Result<Self> {
-        let clients_dir = get_clients_dir().context("getting clients directory")?;
+    pub fn load(name: Id, config: &Config) -> anyhow::Result<Self> {
+        let clients_dir = get_clients_dir(config).context("getting clients directory")?;
         let filename = name.to_filename();
         let path = clients_dir.join(filename);
         let client = Client::load_from_path(path).context("loading client from file")?;
@@ -114,8 +115,8 @@ impl Client {
         Ok(client)
     }
 
-    pub fn list() -> anyhow::Result<Vec<Id>> {
-        let clients_dir = get_clients_dir().context("getting clients directory")?;
+    pub fn list(config: &Config) -> anyhow::Result<Vec<Id>> {
+        let clients_dir = get_clients_dir(config).context("getting clients directory")?;
 
         let client_names = clients_dir
             .read_dir()
