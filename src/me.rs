@@ -1,4 +1,4 @@
-use std::{fs::File, path::Path};
+use std::{fmt::Display, fs::File, path::Path};
 
 use anyhow::Context;
 use serde::{Deserialize, Serialize};
@@ -52,16 +52,20 @@ impl PaymentMethod {
     }
 
     pub fn to_latex(&self) -> String {
-        let display_text = self
-            .display_text
-            .clone()
-            .unwrap_or_else(|| self.name.clone());
+        let display_text = self.to_string();
 
         if let Some(url) = &self.url {
             format!("\\href{{{}}}{{{}}}", display_text, url)
         } else {
             display_text
         }
+    }
+}
+
+impl Display for PaymentMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let display_text = self.display_text.as_ref().unwrap_or(&self.name);
+        f.write_str(display_text)
     }
 }
 

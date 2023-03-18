@@ -151,6 +151,7 @@ fn get_or_create_project(config: &Config) -> anyhow::Result<()> {
 // TODO more `inquire` help texts (especially indicate which prompts are skippable)
 // TODO beancount decimal math
 // TODO beancount for receipts
+// TODO verbose latex mode (show .tex source)
 // TODO master beancount file that imports all others?
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
