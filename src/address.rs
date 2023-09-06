@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct MailingAddress {
     pub addr1: String,
     pub addr2: Option<String>,
+    pub addr3: Option<String>,
     pub city: String,
     pub state: String,
     pub zip: String,
@@ -24,6 +25,13 @@ impl MailingAddress {
             .with_placeholder("Apt. 7")
             .prompt_skippable()
             .context("reading address line 2 from user input")?
+            // Convert Some("") to None
+            .filter(|line| !line.is_empty());
+
+        let addr3 = inquire::Text::new("Address Line 3 (optional):")
+            .with_placeholder("Closet under the stairs")
+            .prompt_skippable()
+            .context("reading address line 3 from user input")?
             // Convert Some("") to None
             .filter(|line| !line.is_empty());
 
@@ -47,6 +55,7 @@ impl MailingAddress {
         let contact = Self {
             addr1,
             addr2,
+            addr3,
             city,
             state,
             zip,

@@ -103,6 +103,11 @@
 	{{- addr2 -}} \\
   {% when None %}
 {% endmatch %}
+{% match client.address.addr3 %}
+  {% when Some with (addr3) %}
+	{{- addr3 -}} \\
+  {% when None %}
+{% endmatch %}
 	{{ client.address.city }}, {{ client.address.state }} {{ client.address.zip }} \\
 	\href{mailto: {{ client.contact.email -}} }{ {{- client.contact.email -}} } % Payee email
 \end{minipage}
@@ -155,6 +160,11 @@
 {% match me.address.addr2 %}
   {% when Some with (addr2) %}
 	{{addr2}} \\
+  {% when None %}
+{% endmatch %}
+{% match me.address.addr3 %}
+  {% when Some with (addr3) %}
+	{{addr3}} \\
   {% when None %}
 {% endmatch %}
 	{{ me.address.city }}, {{ me.address.state }} {{ me.address.zip }} \\
