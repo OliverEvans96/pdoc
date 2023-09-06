@@ -94,6 +94,11 @@ impl Invoice {
         Ok(invoice_numbers)
     }
 
+    /// Check whether an invoice with the given number already exists.
+    pub fn exists(number: u32, config: &Config) -> anyhow::Result<bool> {
+        Self::list(config).map(|numbers| numbers.contains(&number))
+    }
+
     pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let file = File::open(path.as_ref()).context("reading invoice file")?;
         let invoice: Invoice = serde_yaml::from_reader(file).context("parsing invoice yaml")?;
@@ -153,48 +158,59 @@ impl Invoice {
             .parse()
             .context("parsing invoice number")?;
 
-        // TODO: Edit invoice if number already exists
+        let mut invoice = if Self::exists(invoice_number, config)? {
+            // Load invoice if number already exists
+            Self::load(invoice_number, config)?
+        } else {
+            // Otherwise, create from scratch
+            print_header(&format!("Create invoice {}", invoice_number));
 
-        print_header(&format!("Create invoice {}", invoice_number));
+            let project_name = Project::get_or_create_from_user_input(config)
+                .context("getting or creating project")?;
 
-        let project_name = Project::get_or_create_from_user_input(config)
-            .context("getting or creating project")?;
+            let chrono_date = inquire::DateSelect::new("Invoice date:")
+                .prompt()
+                .context("reading invoice date from user input")?;
+            // Convert `chrono::Date` to `time::Date`.
+            let invoice_date_string = DateString::try_new(chrono_date.to_string())
+                .context("parsing invoice DateString from user input")?;
+            let invoice_date: Date = invoice_date_string
+                .clone()
+                .try_into()
+                .context("parsing invoice Date from user input")?;
 
-        let chrono_date = inquire::DateSelect::new("Invoice date:")
-            .prompt()
-            .context("reading invoice date from user input")?;
-        // Convert `chrono::Date` to `time::Date`.
-        let invoice_date_string = DateString::try_new(chrono_date.to_string())
-            .context("parsing invoice DateString from user input")?;
-        let invoice_date: Date = invoice_date_string
-            .clone()
-            .try_into()
-            .context("parsing invoice Date from user input")?;
+            let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
+                .with_default(7)
+                .prompt()
+                .context("reading days-to-pay from user input")?;
 
-        let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
-            .with_default(7)
-            .prompt()
-            .context("reading days-to-pay from user input")?;
+            let due_date = invoice_date + Duration::days(days_to_pay.into());
+            let due_date_string =
+                DateString::try_from(due_date).context("converting due date to DateString")?;
 
-        let due_date = invoice_date + Duration::days(days_to_pay.into());
-        let due_date_string =
-            DateString::try_from(due_date).context("converting due date to DateString")?;
+            let mut items = Vec::new();
 
-        let mut items = Vec::new();
+            while let Some(item) =
+                LineItem::create_from_user_input().context("creating line item from user input")?
+            {
+                items.push(item);
+            }
 
-        while let Some(item) =
-            LineItem::create_from_user_input().context("creating line item from user input")?
-        {
-            items.push(item);
-        }
+            let conditions = inquire::Text::new("Terms and conditions:")
+                .with_placeholder("Please be nice and pay me on time.")
+                .prompt_skippable()
+                .context("reading conditions from user input")?
+                // Convert Some("") to None
+                .filter(|line| !line.is_empty());
 
-        let mut invoice = Invoice {
-            number: invoice_number,
-            project_ref: project_name,
-            date: invoice_date_string,
-            due_date: due_date_string,
-            items,
-            conditions: None,
+            Invoice {
+                number: invoice_number,
+                project_ref: project_name,
+                date: invoice_date_string,
+                due_date: due_date_string,
+                items,
+                conditions,
+            }
         };
 
         invoice = invoice.edit_yaml().context("editing invoice yaml")?;
