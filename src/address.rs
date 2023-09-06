@@ -28,12 +28,16 @@ impl MailingAddress {
             // Convert Some("") to None
             .filter(|line| !line.is_empty());
 
-        let addr3 = inquire::Text::new("Address Line 3 (optional):")
-            .with_placeholder("Closet under the stairs")
-            .prompt_skippable()
-            .context("reading address line 3 from user input")?
-            // Convert Some("") to None
-            .filter(|line| !line.is_empty());
+        let addr3 = if addr2.is_some() {
+            inquire::Text::new("Address Line 3 (optional):")
+                .with_placeholder("Closet under the stairs")
+                .prompt_skippable()
+                .context("reading address line 3 from user input")?
+                // Convert Some("") to None
+                .filter(|line| !line.is_empty())
+        } else {
+            None
+        };
 
         let city = inquire::Text::new("City:")
             .with_placeholder("Springfield")
