@@ -144,6 +144,11 @@
 
 \invoiceconditions{
   % Terms and Conditions: Products sold by ACME Corporation come with no guarantees or warranties of any kind, expressed or implied. ACME specifically disclaims all implied warranties of any kind or nature, including any implied warranty of merchantability and/or any implied warranty of fitness for a particular purpose.
+{% match invoice.conditions %}
+  {% when Some with (conditions) %}
+	{{conditions}}
+  {% when None %}
+{% endmatch %}
 } % Leave command empty (i.e. \invoiceconditions{}) if not required
 
 %---------------------------------------------------------------------------------

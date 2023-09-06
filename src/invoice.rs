@@ -71,6 +71,7 @@ pub struct Invoice {
     pub date: DateString,
     pub due_date: DateString,
     pub items: Vec<LineItem>,
+    pub conditions: Option<String>,
 }
 
 impl Invoice {
@@ -193,6 +194,7 @@ impl Invoice {
             date: invoice_date_string,
             due_date: due_date_string,
             items,
+            conditions: None,
         };
 
         invoice = invoice.edit_yaml().context("editing invoice yaml")?;
@@ -404,6 +406,7 @@ mod test {
             date: date!(2023 - 02 - 17).try_into()?,
             due_date: date!(2023 - 02 - 24).try_into()?,
             items: Vec::new(),
+            conditions: None,
         };
 
         let expected = r#"number: 5
@@ -434,6 +437,7 @@ items: []
             date: date!(2023 - 02 - 17).try_into()?,
             due_date: date!(2023 - 02 - 24).try_into()?,
             items: Vec::new(),
+            conditions: None,
         };
 
         let actual: Invoice = serde_yaml::from_str(yaml)?;
@@ -450,6 +454,7 @@ items: []
                 address: MailingAddress {
                     addr1: "123 Test Street".to_owned(),
                     addr2: None,
+                    addr3: None,
                     city: "Twin Falls".to_owned(),
                     state: "Idaho".to_owned(),
                     zip: "12345".to_owned(),
@@ -483,6 +488,7 @@ items: []
                     },
                 ]
                 .to_vec(),
+                conditions: None,
             },
             project: Project {
                 name: "Test Project #1".to_owned().into(),
@@ -494,6 +500,7 @@ items: []
                 address: MailingAddress {
                     addr1: "124 Test Avenue".to_owned(),
                     addr2: None,
+                    addr3: None,
                     city: "New York".to_owned(),
                     state: "New York".to_owned(),
                     zip: "54321".to_owned(),
