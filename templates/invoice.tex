@@ -130,13 +130,13 @@
 
 \begin{invoicetable}
 {% for item in invoice.items %}
-	\invoiceitem{ {{- item.description -}} }{ {{- item.quantity -}} }{ {{- item.unit_price -}} }{}
+    \invoiceitem{ {{- item.description -}} }{ {{- item.quantity -}} }{ {{- item.unit_price -}} }{}
 {% endfor %}
 \end{invoicetable}
 
 %---------------------------------------------------------------------------------
 
-\vfill\vfill % Vertical alignment whitespace
+\vfill % Vertical alignment whitespace
 
 %---------------------------------------------------------------------------------
 %	INVOICE CONDITIONS
@@ -150,6 +150,8 @@
   {% when None %}
 {% endmatch %}
 } % Leave command empty (i.e. \invoiceconditions{}) if not required
+
+\vfill
 
 %---------------------------------------------------------------------------------
 %	MERCHANT (YOUR) INFORMATION
