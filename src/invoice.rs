@@ -430,6 +430,7 @@ project_ref: Manhattan
 date: 2023-02-17
 due_date: 2023-02-24
 items: []
+conditions: null
 "#;
 
         let actual = serde_yaml::to_string(&invoice)?;
