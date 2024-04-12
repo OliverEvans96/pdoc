@@ -35,14 +35,23 @@
           cargoToml = ./Cargo.toml;
         }).version;
 
-        # extra deps for `pass` feature
-        passDeps = with pkgs; [ libgpg-error gpgme ];
-        allDeps = with pkgs; [ openssl ] ++ passDeps;
+        allDeps = with pkgs; [ openssl ];
+
+        # Clean source, keeping necessary extra files
+        texFilter = path: _type: builtins.match ".*tex$" path != null;
+        clsFilter = path: _type: builtins.match ".*cls$" path != null;
+        finalSourceFilter = path: type:
+          (clsFilter path type) || (texFilter path type)
+          || (craneLib.filterCargoSources path type);
+
+        cleanedSource = lib.cleanSourceWith {
+          src = craneLib.path ./.;
+          filter = finalSourceFilter;
+        };
 
         crateCfg = {
-          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          src = cleanedSource;
           nativeBuildInputs = allDeps;
-          cargoExtraArgs = "--features pass";
         };
 
         # Build the library, then re-use the target dir to generate the wheel file with maturin
@@ -64,7 +73,7 @@
             name = "rust-env";
             src = ./.;
             nativeBuildInputs =
-              (with pkgs; [ pkg-config rust-analyzer maturin pass ]) ++ allDeps;
+              (with pkgs; [ pkg-config rust-analyzer maturin ]) ++ allDeps;
           };
           default = rust;
         };
