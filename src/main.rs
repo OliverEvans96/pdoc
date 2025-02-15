@@ -21,6 +21,7 @@ mod price;
 mod project;
 mod receipt;
 mod storage;
+mod openproject;
 
 #[derive(Subcommand)]
 enum Command {
