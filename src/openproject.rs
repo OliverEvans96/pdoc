@@ -5,6 +5,8 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{collections::HashMap, f64::NAN};
 
+// ChatGPT conversation: https://chatgpt.com/share/67b05bc2-8a50-800c-8080-d64aaf34be79
+
 /// Global API endpoint (adjust as needed)
 const API_ENDPOINT: &str = "https://projects.oliverevans.dev/api/v3";
 const USERNAME: &str = "apikey";
