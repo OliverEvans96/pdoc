@@ -27,6 +27,8 @@ thiserror = "1.0.38"
 time = { version = "0.3.17", features = ["serde", "macros", "local-offset", "parsing", "formatting"] }
 toml = "0.7.2"
 rust_decimal = "1.28.1"
+axum = "0.8.8"
+tokio = { version = "1.49.0", features = ["full"] }
 
 
 [dev-dependencies]
