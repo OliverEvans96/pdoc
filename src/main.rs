@@ -13,6 +13,7 @@ mod completion;
 mod config;
 mod contact;
 mod date;
+mod http;
 mod id;
 mod invoice;
 mod latex;
@@ -42,6 +43,15 @@ enum Command {
     },
     /// Get or create project.
     Project,
+    /// Run the HTTP API server.
+    Serve {
+        /// Host to bind to.
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+        /// Port to listen on.
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+    },
     // Edit personal info.
     // Me,
 }
@@ -159,7 +169,8 @@ fn get_or_create_project(config: &Config) -> anyhow::Result<()> {
 // TODO beancount decimal math
 // TODO beancount for receipts
 // TODO master beancount file that imports all others?
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
     print_title("pdoc");
@@ -174,6 +185,7 @@ fn main() -> anyhow::Result<()> {
         Command::Invoice { show_tex } => generate_invoice(&config, show_tex)?,
         Command::Receipt { show_tex } => generate_receipt(&config, show_tex)?,
         Command::Project => get_or_create_project(&config)?,
+        Command::Serve { host, port } => http::serve(config.clone(), host, port).await?,
         // Command::Me => edit_personal_info(&config)?,
     }
 

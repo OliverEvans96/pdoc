@@ -180,6 +180,22 @@ impl Receipt {
         Ok(())
     }
 
+    pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let file = File::open(path.as_ref()).context("opening receipt yaml file")?;
+        let receipt: Receipt = serde_yaml::from_reader(file).context("deserializing receipt yaml")?;
+
+        Ok(receipt)
+    }
+
+    pub fn load(number: u32, config: &Config) -> anyhow::Result<Self> {
+        let receipts_dir = get_receipts_dir(config).context("getting receipts directory")?;
+        let filename = format!("{}.yaml", number);
+        let path = receipts_dir.join(filename);
+        let receipt = Receipt::load_from_path(path).context("loading receipt from file")?;
+
+        Ok(receipt)
+    }
+
     pub fn collect(self, config: &Config) -> anyhow::Result<FullReceipt> {
         let invoice = find_invoice(self.invoice_num, config).context("finding invoice")?;
         let project = find_project(&invoice.project_ref, config).context("finding project")?;

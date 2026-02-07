@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -93,6 +93,21 @@ impl Project {
         serde_yaml::to_writer(file, self)?;
 
         Ok(())
+    }
+
+    pub fn load_from_path(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let file = File::open(path.as_ref())?;
+        let project: Project = serde_yaml::from_reader(file)?;
+        Ok(project)
+    }
+
+    pub fn load(name: Id, config: &Config) -> anyhow::Result<Self> {
+        let projects_dir = get_projects_dir(config)?;
+        let filename = name.to_filename();
+        let path = projects_dir.join(filename);
+        let project = Project::load_from_path(path)?;
+
+        Ok(project)
     }
 
     pub fn list(config: &Config) -> anyhow::Result<Vec<Id>> {
