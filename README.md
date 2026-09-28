@@ -11,6 +11,15 @@ Current options include:
   * must be an absolute path
   * `~` will be expanded to the current user's home directory
 
+Project YAML files (under the data directory’s `projects/` folder) may include optional default payment terms:
+
+```yaml
+payment_terms:
+  days: 14
+  day_kind: business   # or calendar
+```
+
+When both fields are set, new invoices for that project skip the payment-term prompts and compute `due_date` from the invoice date. Business days count Monday–Friday only (weekends are skipped).
 
 ## Dependencies
 
