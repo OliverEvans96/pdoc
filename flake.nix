@@ -1,18 +1,14 @@
 # From https://github.com/litchipi/nix-build-templates/blob/6e4961dc56a9bbfa3acf316d81861f5bd1ea37ca/rust/maturin.nix
 # See also https://discourse.nixos.org/t/pyo3-maturin-python-native-dependency-management-vs-nixpkgs/21739/2
 {
-  # Build Pyo3 package
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    crane.url = "github:ipetkov/crane";
   };
 
   outputs = inputs:
@@ -24,8 +20,7 @@
         };
         lib = pkgs.lib;
 
-        # Get a custom rust toolchain
-        customRustToolchain = pkgs.rust-bin.stable."1.70.0".default;
+        customRustToolchain = pkgs.rust-bin.stable.latest.default;
         craneLib =
           (inputs.crane.mkLib pkgs).overrideToolchain customRustToolchain;
 
@@ -37,7 +32,6 @@
 
         allDeps = with pkgs; [ openssl ];
 
-        # Clean source, keeping necessary extra files
         texFilter = path: _type: builtins.match ".*tex$" path != null;
         clsFilter = path: _type: builtins.match ".*cls$" path != null;
         finalSourceFilter = path: type:
@@ -54,17 +48,15 @@
           nativeBuildInputs = allDeps;
         };
 
-        # Build the library, then re-use the target dir to generate the wheel file with maturin
         crate = (craneLib.buildPackage (crateCfg // {
           pname = projectName;
           version = projectVersion;
-          # cargoArtifacts = crateArtifacts;
         }));
 
       in rec {
         packages = rec {
           inherit crate;
-          default = crate; # The wheel itself
+          default = crate;
         };
 
         devShell = devShells.default;
