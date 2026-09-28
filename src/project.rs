@@ -8,15 +8,18 @@ use crate::{
     completion::{LocalAutocompleter, PrefixAutocomplete},
     config::Config,
     id::Id,
+    payment_terms::PaymentTerms,
     storage::get_projects_dir,
 };
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Project {
     pub name: Id,
     pub description: String,
     pub client_ref: Id,
+    #[serde(default)]
+    pub payment_terms: Option<PaymentTerms>,
 }
 
 impl Project {
@@ -70,10 +73,13 @@ impl Project {
 
         let client_name = Client::get_or_create_from_user_input(config)?;
 
+        let payment_terms = PaymentTerms::prompt_from_user_optional()?;
+
         let mut project = Self {
             name,
             description,
             client_ref: client_name,
+            payment_terms,
         };
 
         project = project.edit_yaml()?;
@@ -140,5 +146,46 @@ impl PrefixAutocomplete for ProjectAutocomplete {
 
     fn get_lowercase_options(&self) -> &[String] {
         &self.lowercase_names
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::payment_terms::{DayKind, PaymentTerms};
+
+    use super::Project;
+
+    #[test]
+    fn project_deserializes_without_payment_terms() -> anyhow::Result<()> {
+        let yaml = r#"name: Manhattan
+description: A project
+client_ref: Acme
+"#;
+        let project: Project = serde_yaml::from_str(yaml)?;
+
+        assert_eq!(format!("{}", project.name), "Manhattan");
+        assert!(project.payment_terms.is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn project_round_trips_payment_terms() -> anyhow::Result<()> {
+        let project = Project {
+            name: "Manhattan".to_owned().into(),
+            description: "A project".to_owned(),
+            client_ref: "Acme".to_owned().into(),
+            payment_terms: Some(PaymentTerms {
+                days: 14,
+                day_kind: DayKind::Business,
+            }),
+        };
+
+        let yaml = serde_yaml::to_string(&project)?;
+        let parsed: Project = serde_yaml::from_str(&yaml)?;
+
+        assert_eq!(project, parsed);
+
+        Ok(())
     }
 }
