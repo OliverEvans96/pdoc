@@ -10,7 +10,7 @@ use beancount_core::{Account, AccountType, Amount, Posting, Transaction};
 use beancount_render::{BasicRenderer, Renderer};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use time::{Date, Duration};
+use time::Date;
 
 use crate::{
     cli::{print_header, NumberValidator, YamlValidator},
@@ -21,6 +21,7 @@ use crate::{
     id::Id,
     latex::{compile_latex, Asset, Latex},
     me::Me,
+    payment_terms::{compute_due_date, PaymentTerms},
     price::PriceUSD,
     project::Project,
     storage::{find_client, find_project, get_beancount_dir, get_invoices_dir, get_pdfs_dir},
@@ -168,6 +169,8 @@ impl Invoice {
             let project_name = Project::get_or_create_from_user_input(config)
                 .context("getting or creating project")?;
 
+            let project = find_project(&project_name, config).context("finding project")?;
+
             let chrono_date = inquire::DateSelect::new("Invoice date:")
                 .prompt()
                 .context("reading invoice date from user input")?;
@@ -179,12 +182,13 @@ impl Invoice {
                 .try_into()
                 .context("parsing invoice Date from user input")?;
 
-            let days_to_pay = inquire::CustomType::<u16>::new("Days to pay:")
-                .with_default(7)
-                .prompt()
-                .context("reading days-to-pay from user input")?;
+            let payment_terms = match &project.payment_terms {
+                Some(terms) => terms.clone(),
+                None => PaymentTerms::prompt_from_user()
+                    .context("reading payment terms from user input")?,
+            };
 
-            let due_date = invoice_date + Duration::days(days_to_pay.into());
+            let due_date = compute_due_date(invoice_date, &payment_terms);
             let due_date_string =
                 DateString::try_from(due_date).context("converting due date to DateString")?;
 
@@ -511,6 +515,7 @@ items: []
                 name: "Test Project #1".to_owned().into(),
                 description: "A great project for testing".to_owned(),
                 client_ref: "Test Client #1".to_owned().into(),
+                payment_terms: None,
             },
             client: Client {
                 name: "Test Client #1".to_owned().into(),
