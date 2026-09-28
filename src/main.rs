@@ -17,6 +17,7 @@ mod id;
 mod invoice;
 mod latex;
 mod me;
+mod payment_terms;
 mod price;
 mod project;
 mod receipt;
