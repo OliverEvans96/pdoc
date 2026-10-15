@@ -64,8 +64,18 @@
           rust = pkgs.mkShell {
             name = "rust-env";
             src = ./.;
-            nativeBuildInputs =
-              (with pkgs; [ pkg-config rust-analyzer maturin ]) ++ allDeps;
+            nativeBuildInputs = (with pkgs; [
+              pkg-config
+              rust-analyzer
+              maturin
+              (texliveMedium.withPackages (ps: with ps; [
+                latexmk
+                lato
+                tfrupee
+                datenumber
+                footmisc
+              ]))
+            ]) ++ allDeps;
           };
           default = rust;
         };

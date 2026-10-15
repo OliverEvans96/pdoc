@@ -24,3 +24,4 @@ When both fields are set, new invoices for that project skip the payment-term pr
 ## Dependencies
 
 This program requires `latexmk` to be available on the system to render PDFs (via the `texrender` crate).
+Integration tests that exercise PDF generation also require `latexmk` on `PATH` (`cargo test` will fail if it is missing). The Nix dev shell (`nix develop`) includes a TeX environment suitable for running those tests.
